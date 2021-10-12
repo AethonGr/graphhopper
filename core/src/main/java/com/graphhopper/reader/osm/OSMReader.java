@@ -182,7 +182,7 @@ public class OSMReader {
                 osmFile.getAbsolutePath(), nf(baseGraph.getNodes()), nf(baseGraph.getEdges()), nf(zeroCounter));
     }
 
-    /**
+    /**jbk
      * @return the timestamp given in the OSM file header or null if not found
      */
     public Date getDataDate() {

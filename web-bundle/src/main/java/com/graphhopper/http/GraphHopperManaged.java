@@ -53,9 +53,9 @@ public class GraphHopperManaged implements Managed {
     private final GraphHopper graphHopper;
 
     public GraphHopperManaged(GraphHopperConfig configuration) {
-        if (configuration.has("gtfs.file")) {
+        if (configuration.has("gtfs.file") || configuration.getBool("load.from.db",false)) {
             graphHopper = new GraphHopperGtfs(configuration);
-        } else {
+        } else{
             graphHopper = new GraphHopper();
         }
 

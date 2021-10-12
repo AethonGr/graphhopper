@@ -19,7 +19,6 @@
 package com.graphhopper.gtfs;
 
 
-import com.conveyal.gtfs.GTFSFeed;
 import com.conveyal.gtfs.model.Transfer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;

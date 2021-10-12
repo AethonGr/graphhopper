@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.conveyal.gtfs;
+package com.graphhopper.gtfs;
 
 import com.conveyal.gtfs.error.GTFSError;
 import com.conveyal.gtfs.error.GeneralError;
@@ -57,7 +57,8 @@ import java.util.stream.StreamSupport;
  * All entities must be from a single feed namespace.
  * Composed of several GTFSTables.
  */
-public class GTFSFeed implements Cloneable, Closeable {
+public class
+GTFSFeed implements Cloneable, Closeable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GTFSFeed.class);
 
@@ -159,8 +160,76 @@ public class GTFSFeed implements Cloneable, Closeable {
         loaded = true;
     }
 
+    public void loadFromdb(int company_id, String fid) throws IOException {
+        if (this.loaded) throw new UnsupportedOperationException("Attempt to load GTFS into existing database");
+
+        // NB we don't have a single CRC for the file, so we combine all the CRCs of the component files. NB we are not
+        // simply summing the CRCs because CRCs are (I assume) uniformly randomly distributed throughout the width of a
+        // long, so summing them is a convolution which moves towards a Gaussian with mean 0 (i.e. more concentrated
+        // probability in the center), degrading the quality of the hash. Instead we XOR. Assuming each bit is independent,
+        // this will yield a nice uniformly distributed result, because when combining two bits there is an equal
+        // probability of any input, which means an equal probability of any output. At least I think that's all correct.
+        // Repeated XOR is not commutative but zip.stream returns files in the order they are in the central directory
+        // of the zip file, so that's not a problem.
+
+        new FeedInfo.Loader(this).loadTable(company_id);
+        // maybe we should just point to the feed object itself instead of its ID, and null out its stoptimes map after loading
+        if (fid != null) {
+            feedId = fid;
+            LOG.info("Feed ID is undefined, pester maintainers to include a feed ID. Using file name {}.", feedId); // TODO log an error, ideally feeds should include a feedID
+        }
+        else if (feedId == null || feedId.isEmpty()) {
+            feedId = "db";
+            LOG.info("Feed ID is undefined, pester maintainers to include a feed ID. Using file name {}.", feedId); // TODO log an error, ideally feeds should include a feedID
+        }
+        else {
+            LOG.info("Feed ID is '{}'.", feedId);
+        }
+
+        db.getAtomicString("feed_id").set(feedId);
+
+        new Agency.Loader(this).loadTable(company_id);
+        if (agency.isEmpty()) {
+            errors.add(new GeneralError("agency", 0, "agency_id", "Need at least one agency."));
+        }
+
+        // calendars and calendar dates are joined into services. This means a lot of manipulating service objects as
+        // they are loaded; since mapdb keys/values are immutable, load them in memory then copy them to MapDB once
+        // we're done loading them
+        Map<String, Service> serviceTable = new HashMap<>();
+        new Calendar.Loader(this, serviceTable).loadTable(company_id);
+        new CalendarDate.Loader(this, serviceTable).loadTable(company_id);
+        this.services.putAll(serviceTable);
+        serviceTable = null; // free memory
+
+        // Same deal
+        Map<String, Fare> fares = new HashMap<>();
+        new FareAttribute.Loader(this, fares).loadTable(company_id);
+        new FareRule.Loader(this, fares).loadTable(company_id);
+        this.fares.putAll(fares);
+        fares = null; // free memory
+
+        new Route.Loader(this).loadTable(company_id);
+        new ShapePoint.Loader(this).loadTable(company_id);
+        new Stop.Loader(this).loadTable(company_id);
+        new Transfer.Loader(this).loadTable(company_id);
+        new Trip.Loader(this).loadTable(company_id);
+        new Frequency.Loader(this).loadTable(company_id);
+        new StopTime.Loader(this).loadTable(company_id); // comment out this line for quick testing using NL feed
+        loaded = true;
+
+    }
+
+
+
     public void loadFromFileAndLogErrors(File zip) throws IOException {
         loadFromZipfileOrDirectory(zip, null);
+        for (GTFSError error : errors) {
+            LOG.error(error.getMessageWithContext());
+        }
+    }
+    public void loadFromFileAndLogErrors(int company_id) throws IOException {
+        loadFromdb(company_id, null);
         for (GTFSError error : errors) {
             LOG.error(error.getMessageWithContext());
         }

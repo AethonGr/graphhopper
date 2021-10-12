@@ -75,10 +75,21 @@ public class GraphHopperGtfs extends GraphHopper {
             InMemConstructionIndex indexBuilder = new InMemConstructionIndex(IndexStructureInfo.create(
                     new BBox(-180.0, 180.0, -90.0, 90.0), 300));
             try {
-                int idx = 0;
-                List<String> gtfsFiles = ghConfig.has("gtfs.file") ? Arrays.asList(ghConfig.getString("gtfs.file", "").split(",")) : Collections.emptyList();
-                for (String gtfsFile : gtfsFiles) {
-                    getGtfsStorage().loadGtfsFromZipFileOrDirectory("gtfs_" + idx++, new File(gtfsFile));
+                if (ghConfig.getBool("load.from.db",false)) {
+                    if (ghConfig.has("company.id")) {
+                        int company_id = ghConfig.getInt("company.id", 0);
+                        getGtfsStorage().loadGtfsFromDB("gtfs_" + ghConfig.getInt("company.id",0), company_id);
+                    }
+                    else {
+                        throw new RuntimeException("No company id, please provide one");
+                    }
+                }
+                else {
+                    int idx = 0;
+                    List<String> gtfsFiles = ghConfig.has("gtfs.file") ? Arrays.asList(ghConfig.getString("gtfs.file", "").split(",")) : Collections.emptyList();
+                    for (String gtfsFile : gtfsFiles) {
+                        getGtfsStorage().loadGtfsFromZipFileOrDirectory("gtfs_" + idx++, new File(gtfsFile));
+                    }
                 }
                 getGtfsStorage().postInit();
                 Map<String, Transfers> allTransfers = new HashMap<>();

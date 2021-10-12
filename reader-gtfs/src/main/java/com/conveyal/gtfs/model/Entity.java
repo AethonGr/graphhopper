@@ -26,7 +26,7 @@
 
 package com.conveyal.gtfs.model;
 
-import com.conveyal.gtfs.GTFSFeed;
+import com.graphhopper.gtfs.GTFSFeed;
 import com.conveyal.gtfs.error.*;
 import com.csvreader.CsvReader;
 import com.csvreader.CsvWriter;
@@ -45,6 +45,10 @@ import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import org.apache.commons.io.input.BOMInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.sql.*;
 
 
 /**
@@ -291,7 +295,6 @@ public abstract class Entity implements Serializable, Cloneable {
                 loadOneRow(); // Call subclass method to produce an entity from the current row.
             }
         }
-
         private void missing() {
             if (this.isRequired()) {
                 feed.errors.add(new MissingTableError(tableName));
@@ -300,8 +303,81 @@ public abstract class Entity implements Serializable, Cloneable {
             }
         }
     }
+        public void loadTable(int company_id) throws IOException {
+            LOG.info("Loading GTFS table {} from database", tableName);
+            try
+            {
+                //get the variable from enviroment
+                String host = System.getenv("DATABASE_HOST");
+                String user = System.getenv("DATABASE_USER");
+                String password = System.getenv("DATABASE_PASSWORD");
 
-    /**
+                // create our mysql database connection
+                String myDriver = "org.gjt.mm.mysql.Driver";
+                String myUrl = "jdbc:mysql://"+host+":3306/gtfs";
+                Class.forName(myDriver);
+                Connection conn = DriverManager.getConnection(myUrl, user, password);
+                String S_company_id = String.valueOf(company_id);
+                // our SQL SELECT query.
+                // if you only need a few columns, specify them by name instead of using "*"
+                String rows = "SELECT * FROM " + tableName + " WHERE company_id = "+ S_company_id;
+
+                // create the java statement
+                Statement st = conn.createStatement();
+
+                // execute the query, and get a java resultset
+                ResultSet resultRows = st.executeQuery(rows);
+
+                ResultSetMetaData rsmd = resultRows.getMetaData();
+                int columnCount = rsmd.getColumnCount();
+
+                PrintWriter pw = new PrintWriter("tmp");
+
+                for (int i = 1; i <= columnCount-1; i++) {
+                    pw.write(rsmd.getColumnName(i));
+                    if (i != columnCount-1) {
+                        pw.append(",");
+                    }
+                }
+                while (resultRows.next()) {
+                    pw.println();
+                    for (int i = 1; i <= columnCount-1; i++) {
+                        final Object value = resultRows.getObject(i);
+                        String cell = (value == null ? "" : value.toString());
+                        if(cell.contains("-")){
+                            cell = cell.replace("-","");
+                        }
+                        pw.write("\"");
+                        pw.write(cell);
+                        pw.write("\"");
+                        if (i != columnCount-1) {
+                            pw.append(",");
+                        }
+                    }
+                }
+                pw.flush();
+
+                CsvReader reader = new CsvReader("tmp", ',', Charset.forName("UTF8"));
+
+                this.reader = reader;
+                reader.readHeaders();
+                while (reader.readRecord()) {
+                    // reader.getCurrentRecord() is zero-based and does not include the header line, keep our own row count
+                    if (++row % 500000 == 0) {
+                        LOG.info("Record number {}", human(row));
+                    }
+                    loadOneRow(); // Call subclass method to produce an entity from the current row.
+                }
+            }
+            catch (Exception e)
+            {
+                System.err.println("Got an exception! ");
+                System.err.println(e.getMessage());
+            }
+        }
+    }
+
+/**
      * An output stream that cannot be closed. CSVWriters try to close their output streams when they are garbage-collected,
      * which breaks if another CSV writer is still writing to the ZIP file.
      *

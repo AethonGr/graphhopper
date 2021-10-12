@@ -251,6 +251,18 @@ public class GtfsStorage {
 		}
 		this.gtfsFeedIds.add(id);
 	}
+	void loadGtfsFromDB(String id, int company_id) {
+		File dbFile = new File(dir.getLocation() + "/" + id);
+		try {
+			Files.deleteIfExists(dbFile.toPath());
+			GTFSFeed feed = new GTFSFeed(dbFile);
+			feed.loadFromFileAndLogErrors(company_id);
+			this.gtfsFeeds.put(id, feed);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		this.gtfsFeedIds.add(id);
+	}
 
 	// TODO: Refactor initialization
 	public void postInit() {

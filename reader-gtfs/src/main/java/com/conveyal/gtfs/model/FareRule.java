@@ -26,7 +26,7 @@
 
 package com.conveyal.gtfs.model;
 
-import com.conveyal.gtfs.GTFSFeed;
+import com.graphhopper.gtfs.GTFSFeed;
 import com.conveyal.gtfs.error.ReferentialIntegrityError;
 
 import java.io.IOException;
