@@ -26,7 +26,7 @@
 
 package com.conveyal.gtfs.model;
 
-import com.conveyal.gtfs.GTFSFeed;
+import com.graphhopper.gtfs.GTFSFeed;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;

@@ -158,7 +158,7 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
                 + "total:" + (int) (sw1.getSeconds() + sw2.getSeconds()) + "s");
     }
 
-    /**
+    /**jbk
      * Preprocessing of OSM file to select nodes which are used for highways. This allows a more
      * compact graph data structure.
      */

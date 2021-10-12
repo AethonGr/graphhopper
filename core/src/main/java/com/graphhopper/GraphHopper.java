@@ -124,6 +124,9 @@ public class GraphHopper {
     private EncodedValueFactory encodedValueFactory = new DefaultEncodedValueFactory();
     private TagParserFactory tagParserFactory = new DefaultTagParserFactory();
     private PathDetailsBuilderFactory pathBuilderFactory = new PathDetailsBuilderFactory();
+    // for db reading
+    private int companyId;
+    private boolean loadFrommDB;
 
     public EncodingManager.Builder getEncodingManagerBuilder() {
         return emBuilder;

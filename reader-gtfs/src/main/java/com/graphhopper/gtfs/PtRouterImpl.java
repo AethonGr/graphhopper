@@ -18,8 +18,8 @@
 
 package com.graphhopper.gtfs;
 
-import com.conveyal.gtfs.GTFSFeed;
 import com.google.transit.realtime.GtfsRealtime;
+import com.graphhopper.gtfs.GraphHopperGtfs;
 import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.GraphHopperConfig;
@@ -271,7 +271,7 @@ public final class PtRouterImpl implements PtRouter {
             for (Label stationLabel : stationLabels) {
                 reverseSettledSet.put(stationLabel.adjNode, stationLabel);
             }
-
+//            update_gtfs_storage();
             GraphExplorer graphExplorer = new GraphExplorer(queryGraph, arriveBy ? egressWeighting : accessWeighting, ptEncodedValues, gtfsStorage, realtimeFeed, arriveBy, false, true, walkSpeedKmH, false, blockedRouteTypes);
             List<Label> discoveredSolutions = new ArrayList<>();
             router = new MultiCriteriaLabelSetting(graphExplorer, ptEncodedValues, arriveBy, !ignoreTransfers, profileQuery, maxProfileDuration, discoveredSolutions);
@@ -398,6 +398,10 @@ public final class PtRouterImpl implements PtRouter {
             }
             return paths;
         }
+
+//        protected void update_gtfs_storage() {
+//            graphHopperStorage.loadExisting();
+//        }
 
         private boolean profileFinished(MultiCriteriaLabelSetting router, List<Label> discoveredSolutions, Label walkSolution) {
             return discoveredSolutions.size() >= limitSolutions ||

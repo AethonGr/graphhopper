@@ -18,7 +18,6 @@
 
 package com.graphhopper.gtfs;
 
-import com.conveyal.gtfs.GTFSFeed;
 import com.conveyal.gtfs.model.Fare;
 
 import java.io.Serializable;

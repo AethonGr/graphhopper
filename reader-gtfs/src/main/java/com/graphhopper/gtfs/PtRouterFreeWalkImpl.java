@@ -18,7 +18,6 @@
 
 package com.graphhopper.gtfs;
 
-import com.conveyal.gtfs.GTFSFeed;
 import com.google.transit.realtime.GtfsRealtime;
 import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;

@@ -18,7 +18,6 @@
 
 package com.graphhopper.gtfs;
 
-import com.conveyal.gtfs.GTFSFeed;
 import com.conveyal.gtfs.model.Transfer;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.GraphHopperConfig;
@@ -93,14 +92,21 @@ public class GraphHopperGtfs extends GraphHopper {
             GraphHopperStorage graphHopperStorage = getGraphHopperStorage();
             LocationIndex streetNetworkIndex = getLocationIndex();
             try {
-                int idx = 0;
-                List<String> gtfsFiles = ghConfig.has("gtfs.file") ? Arrays.asList(ghConfig.getString("gtfs.file", "").split(",")) : Collections.emptyList();
-                for (String gtfsFile : gtfsFiles) {
-                    try {
-                        getGtfsStorage().loadGtfsFromZipFile("gtfs_" + idx++, new ZipFile(gtfsFile));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                if (ghConfig.getBool("load.from.db",false)) {
+                    if (ghConfig.has("company.id")) {
+                        int company_id = ghConfig.getInt("company.id", 0);
+                        getGtfsStorage().loadGtfsFromDB("gtfs_" + ghConfig.getInt("company.id",0), company_id);
                     }
+                    else {
+                        throw new RuntimeException("No company id, please provide one");
+                    }
+                }
+                else {
+                    int idx = 0;
+                    List<String> gtfsFiles = ghConfig.has("gtfs.file") ? Arrays.asList(ghConfig.getString("gtfs.file", "").split(",")) : Collections.emptyList();
+                    for (String gtfsFile : gtfsFiles) {
+                            getGtfsStorage().loadGtfsFromZipFile("gtfs_" + idx++, new ZipFile(gtfsFile));
+                        }
                 }
                 getGtfsStorage().postInit();
                 Map<String, Transfers> allTransfers = new HashMap<>();

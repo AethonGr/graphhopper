@@ -18,7 +18,6 @@
 
 package com.graphhopper.gtfs;
 
-import com.conveyal.gtfs.GTFSFeed;
 import com.conveyal.gtfs.model.Fare;
 import com.google.transit.realtime.GtfsRealtime;
 import com.graphhopper.storage.Directory;
@@ -200,6 +199,18 @@ public class GtfsStorage implements GtfsStorageI {
 			Files.deleteIfExists(dbFile.toPath());
 			GTFSFeed feed = new GTFSFeed(dbFile);
 			feed.loadFromFileAndLogErrors(zipFile);
+			this.gtfsFeeds.put(id, feed);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		this.gtfsFeedIds.add(id);
+	}
+	void loadGtfsFromDB(String id, int company_id) {
+		File dbFile = new File(dir.getLocation() + "/" + id);
+		try {
+			Files.deleteIfExists(dbFile.toPath());
+			GTFSFeed feed = new GTFSFeed(dbFile);
+			feed.loadFromFileAndLogErrors(company_id);
 			this.gtfsFeeds.put(id, feed);
 		} catch (IOException e) {
 			throw new RuntimeException(e);

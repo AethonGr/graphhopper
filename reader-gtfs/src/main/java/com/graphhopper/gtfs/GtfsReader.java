@@ -19,7 +19,6 @@
 package com.graphhopper.gtfs;
 
 import com.carrotsearch.hppc.IntArrayList;
-import com.conveyal.gtfs.GTFSFeed;
 import com.conveyal.gtfs.model.*;
 import com.google.common.collect.HashMultimap;
 import com.google.transit.realtime.GtfsRealtime;

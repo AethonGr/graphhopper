@@ -18,7 +18,7 @@
 
 package com.graphhopper.http;
 
-import com.conveyal.gtfs.GTFSFeed;
+import com.graphhopper.gtfs.GTFSFeed;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;

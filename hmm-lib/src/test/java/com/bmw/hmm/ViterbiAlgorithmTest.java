@@ -20,6 +20,8 @@ package com.bmw.hmm;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
+import java.util.function.BooleanSupplier;
+
 
 import static java.lang.Math.log;
 import static org.junit.jupiter.api.Assertions.*;

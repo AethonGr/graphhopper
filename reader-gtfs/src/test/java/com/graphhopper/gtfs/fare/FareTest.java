@@ -18,7 +18,7 @@
 
 package com.graphhopper.gtfs.fare;
 
-import com.conveyal.gtfs.GTFSFeed;
+import com.graphhopper.gtfs.GTFSFeed;
 import com.conveyal.gtfs.model.Fare;
 import com.conveyal.gtfs.model.FareAttribute;
 import com.conveyal.gtfs.model.FareRule;
