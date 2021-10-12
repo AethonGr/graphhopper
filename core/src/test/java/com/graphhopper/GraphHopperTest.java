@@ -230,7 +230,7 @@ public class GraphHopperTest {
         request.addPoint(new GHPoint(43.743887, 7.431151));
         request.addPoint(new GHPoint(43.744007, 7.431076));
         //Force initial U-Turn
-        request.setHeadings(Arrays.asList(200., Double.NaN));
+        request.setHeadings(Arrays.asList(200.));
 
         request.setAlgorithm(ASTAR).setProfile(profile);
         GHResponse rsp = hopper.route(request);
@@ -238,12 +238,12 @@ public class GraphHopperTest {
         assertFalse(rsp.hasErrors());
         ResponsePath res = rsp.getBest();
         InstructionList il = res.getInstructions();
-        assertEquals(3, il.size());
+        assertEquals(4, il.size());
 
         // Initial U-turn
-        assertEquals("make a U-turn onto Avenue Princesse Grace", il.get(0).getTurnDescription(tr));
-        // Second U-turn to get to destination
         assertEquals("make a U-turn onto Avenue Princesse Grace", il.get(1).getTurnDescription(tr));
+        // Second U-turn to get to destination
+        assertEquals("make a U-turn onto Avenue Princesse Grace", il.get(2).getTurnDescription(tr));
     }
 
     private void testImportCloseAndLoad(boolean ch, boolean lm, boolean sort, boolean custom) {
@@ -1107,8 +1107,10 @@ public class GraphHopperTest {
                 setGraphHopperLocation(GH_LOCATION).
                 setOSMFile(MONACO).
                 setStoreOnFlush(true).
-                setElevationWayPointMaxDistance(1).
-                setProfiles(new Profile("profile").setVehicle(vehicle).setWeighting(weighting)).
+                setProfiles(new Profile("profile").setVehicle(vehicle).setWeighting(weighting));
+        hopper.getRouterConfig().setElevationWayPointMaxDistance(1.);
+        hopper.getReaderConfig().
+                setElevationMaxWayPointDistance(1.).
                 setLongEdgeSamplingDistance(30);
 
         SRTMProvider elevationProvider = new SRTMProvider(DIR);

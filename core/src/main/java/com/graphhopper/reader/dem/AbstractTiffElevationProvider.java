@@ -117,7 +117,7 @@ public abstract class AbstractTiffElevationProvider extends TileBasedElevationPr
             demProvider.setInterpolate(interpolate);
 
             cacheData.put(name, demProvider);
-            DataAccess heights = getDirectory().find(name + ".gh");
+            DataAccess heights = getDirectory().create(name + ".gh");
             demProvider.setHeights(heights);
             boolean loadExisting = false;
             try {
@@ -135,8 +135,7 @@ public abstract class AbstractTiffElevationProvider extends TileBasedElevationPr
                 } catch (IOException e) {
                     demProvider.setSeaLevel(true);
                     // use small size on disc and in-memory
-                    heights.setSegmentSize(100).create(10).
-                            flush();
+                    heights.create(10).flush();
                     return 0;
                 }
 

@@ -102,7 +102,7 @@ public abstract class AbstractSRTMElevationProvider extends TileBasedElevationPr
             if (fileName == null)
                 return 0;
 
-            DataAccess heights = getDirectory().find("dem" + intKey);
+            DataAccess heights = getDirectory().create("dem" + intKey);
             boolean loadExisting = false;
             try {
                 loadExisting = heights.loadExisting();
@@ -119,8 +119,8 @@ public abstract class AbstractSRTMElevationProvider extends TileBasedElevationPr
                     demProvider.setHeights(heights);
                     demProvider.setSeaLevel(true);
                     // use small size on disc and in-memory
-                    heights.setSegmentSize(100).create(10).
-                            flush();
+                    heights.create(10)
+                            .flush();
                     return 0;
                 }
             }
