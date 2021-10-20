@@ -314,7 +314,7 @@ public abstract class Entity implements Serializable, Cloneable {
 
                 // create our mysql database connection
                 String myDriver = "org.gjt.mm.mysql.Driver";
-                String myUrl = "jdbc:mysql://"+host+":3306/gtfs";
+                String myUrl = "jdbc:mysql://"+host+"/gtfs?characterEncoding=latin1&useConfigs=maxPerformance";
                 Class.forName(myDriver);
                 Connection conn = DriverManager.getConnection(myUrl, user, password);
                 String S_company_id = String.valueOf(company_id);
