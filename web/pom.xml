@@ -40,9 +40,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.17</version>
-            <type>jar</type>
-            <scope>compile</scope>
+            <version>8.0.26</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
