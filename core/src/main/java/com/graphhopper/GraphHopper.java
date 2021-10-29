@@ -817,6 +817,16 @@ public class GraphHopper {
         }
         close();
     }
+    public void build() {
+        if (!load(ghLocation)) {
+            printInfo();
+            process_build(ghLocation);
+        } else {
+            printInfo();
+            logger.info("Graph already imported into " + ghLocation);
+        }
+        close();
+    }
 
     /**
      * Creates the graph from OSM data.
@@ -851,6 +861,28 @@ public class GraphHopper {
             cleanUp();
             postImport();
             postProcessing(closeEarly);
+            flush();
+        } finally {
+            if (lock != null)
+                lock.release();
+        }
+    }
+    private void process_build(String graphHopperLocation) {
+        setGraphHopperLocation(graphHopperLocation);
+        GHLock lock = null;
+        try {
+            if (ghStorage == null)
+                throw new IllegalStateException("GraphHopperStorage must be initialized before starting the import");
+            if (ghStorage.getDirectory().getDefaultType().isStoring()) {
+                lockFactory.setLockDir(new File(graphHopperLocation));
+                lock = lockFactory.create(fileLockName, true);
+                if (!lock.tryLock())
+                    throw new RuntimeException("To avoid multiple writers we need to obtain a write lock but it failed. In " + graphHopperLocation, lock.getObtainFailedReason());
+            }
+            ensureWriteAccess();
+            importOSM();
+            cleanUp();
+            postProcessing(true);
             flush();
         } finally {
             if (lock != null)

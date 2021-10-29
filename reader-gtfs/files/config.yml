@@ -1,0 +1,42 @@
+datareader.file: reader-gtfs/files/athens.osm.pbf
+graph.location: reader-gtfs/files/dionysos_graph
+company.id: 1
+load.from.db: true
+
+profiles:
+
+  - name: foot
+    vehicle: foot
+    weighting: fastest
+
+  - name: bike
+    vehicle: bike
+    weighting: fastest
+
+  - name: hike
+    vehicle: hike
+    weighting: fastest
+
+  - name: wheelchair
+    vehicle: wheelchair
+    weighting: fastest
+
+  - name: racingbike
+    vehicle: racingbike
+    weighting: fastest
+
+  - name: car
+    vehicle: car
+    weighting: fastest
+
+  - name: motorcycle
+    vehicle: motorcycle
+    weighting: fastest
+
+  - name: car4wd
+    vehicle: car4wd
+    weighting: fastest
+
+  - name: mtb
+    vehicle: mtb
+    weighting: fastest

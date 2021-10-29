@@ -307,17 +307,24 @@ public abstract class Entity implements Serializable, Cloneable {
             LOG.info("Loading GTFS table {} from database", tableName);
             try
             {
-                //get the variable from enviroment
-                String host = System.getenv("DATABASE_HOST");
-                String user = System.getenv("DATABASE_USER");
-                String password = System.getenv("DATABASE_PASSWORD");
+                String host = "";
+                String user = "";
+                String password = "";
+                if (System.getenv("DATABASE_HOST") != null || System.getenv("DATABASE_USER") != null ||
+                        System.getenv("DATABASE_PASSWORD") != null) {
+                    host = System.getenv("DATABASE_HOST");
+                    user = System.getenv("DATABASE_USER");
+                    password = System.getenv("DATABASE_PASSWORD");
+                } else {
+                    host = "localhost";
+                    user = "root";
+                    password = "1234";
+                }
+                String S_company_id = String.valueOf(company_id);
 
                 // create our mysql database connection
-                String myDriver = "org.gjt.mm.mysql.Driver";
-                String myUrl = "jdbc:mysql://"+host+"/gtfs?characterEncoding=latin1&useConfigs=maxPerformance";
-                Class.forName(myDriver);
-                Connection conn = DriverManager.getConnection(myUrl, user, password);
-                String S_company_id = String.valueOf(company_id);
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/gtfs",user,password);
                 // our SQL SELECT query.
                 // if you only need a few columns, specify them by name instead of using "*"
                 String rows = "SELECT * FROM " + tableName + " WHERE company_id = "+ S_company_id;
@@ -368,8 +375,12 @@ public abstract class Entity implements Serializable, Cloneable {
                     }
                     loadOneRow(); // Call subclass method to produce an entity from the current row.
                 }
-            }
-            catch (Exception e)
+            } catch (SQLException ex) {
+                // handle any errors
+                System.out.println("SQLException: " + ex.getMessage());
+                System.out.println("SQLState: " + ex.getSQLState());
+                System.out.println("VendorError: " + ex.getErrorCode());
+            } catch (Exception e)
             {
                 System.err.println("Got an exception! ");
                 System.err.println(e.getMessage());
