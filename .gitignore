@@ -43,3 +43,14 @@ local.properties
 .DS_Store
 /graph-cache
 package-lock.json
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/transit_schedule.p
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/transit_schedule
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/string_index_vals
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/string_index_keys
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/properties
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/nodes
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/location_index
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/gtfs_0.p
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/gtfs_0
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/geometry
+web/src/main/java/com/graphhopper/http/resources/oasa_graph/edges
