@@ -284,37 +284,17 @@ public abstract class Entity implements Serializable {
         public void loadTable(int company_id) throws IOException {
             LOG.info("Loading GTFS table {} from database", tableName);
             try
-            {
-                String host = "";
-                String user = "";
-                String password = "";
-                String db = "";
-                if (System.getenv("DATABASE_HOST") != null || System.getenv("DATABASE_USER") != null ||
-                        System.getenv("DATABASE_PASSWORD") != null) {
-                    host = System.getenv("DATABASE_HOST");
-                    user = System.getenv("DATABASE_USER");
-                    password = System.getenv("DATABASE_PASSWORD");
-                    db = System.getenv("DATABASE_NAME");
-                } else {
-                    host = "localhost";
-                    user = "root";
-                    password = "1234";
-                    db = "gtfs";
+            {   String S_company_id = String.valueOf(company_id);
+                DBConnection conn = new DBConnection();
+                String tableName_extended = tableName;
+                if (System.getenv("JP_DATABASE_TABLENAME_EXTENSION")!=null) {
+                    tableName_extended = tableName_extended.concat(System.getenv("JP_DATABASE_TABLENAME_EXTENSION"));
                 }
-                String S_company_id = String.valueOf(company_id);
-
-                // create our mysql database connection
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                Connection conn = DriverManager.getConnection("jdbc:mysql://" + host + ":3306/" + db,user,password);
                 // our SQL SELECT query.
                 // if you only need a few columns, specify them by name instead of using "*"
-                String rows = "SELECT * FROM " + tableName + " WHERE company_id = "+ S_company_id;
-
+                String query = "SELECT * FROM " + tableName_extended + " WHERE company_id = "+ S_company_id;
                 // create the java statement
-                Statement st = conn.createStatement();
-
-                // execute the query, and get a java resultset
-                ResultSet resultRows = st.executeQuery(rows);
+                ResultSet resultRows = conn.ExecuteQuery(query);
 
                 ResultSetMetaData rsmd = resultRows.getMetaData();
                 int columnCount = rsmd.getColumnCount();
