@@ -299,33 +299,32 @@ public abstract class Entity implements Serializable {
                 ResultSetMetaData rsmd = resultRows.getMetaData();
                 int columnCount = rsmd.getColumnCount();
 
-                PrintWriter pw = new PrintWriter("tmp");
+                String result = "";
 
                 for (int i = 1; i <= columnCount-1; i++) {
-                    pw.write(rsmd.getColumnName(i));
+                    result = result.concat(rsmd.getColumnName(i));
                     if (i != columnCount-1) {
-                        pw.append(",");
+                        result = result.concat(",");
                     }
                 }
                 while (resultRows.next()) {
-                    pw.println();
+                    result = result.concat("\n");
                     for (int i = 1; i <= columnCount-1; i++) {
                         final Object value = resultRows.getObject(i);
                         String cell = (value == null ? "" : value.toString());
                         if(cell.contains("-")){
                             cell = cell.replace("-","");
                         }
-                        pw.write("\"");
-                        pw.write(cell);
-                        pw.write("\"");
+                        result = result.concat("\"");
+                        result = result.concat(cell);
+                        result = result.concat("\"");
                         if (i != columnCount-1) {
-                            pw.append(",");
+                            result = result.concat(",");
                         }
                     }
                 }
-                pw.flush();
 
-                CsvReader reader = new CsvReader("tmp", ',', Charset.forName("UTF8"));
+                CsvReader reader = new CsvReader(new StringReader(result));
 
                 this.reader = reader;
                 reader.readHeaders();
