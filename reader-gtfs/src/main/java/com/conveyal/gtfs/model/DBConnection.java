@@ -6,6 +6,7 @@ import java.sql.*;
 
 public class DBConnection {
     private Connection conn;
+
     public DBConnection() throws ClassNotFoundException, SQLException {
         String host = null;
         String user = null;
@@ -24,12 +25,16 @@ public class DBConnection {
             user = "root";
             password = "1234";
             db = "gtfs";
-            port = "3306";
+            port = "3303";
         }
-        Class.forName("com.mysql.cj.jdbc.Driver");
-        this.conn = DriverManager.getConnection("jdbc:mysql://" + host + ":"+port+"/" + db, user, password);
-    }
+        try{
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            this.conn = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + db, user, password);
+        } catch (ClassNotFoundException | SQLException e){
+            System.out.println("Exception when connection to database! Exception : " + e);
+        }
 
+}
     public Connection getConn() {
         return conn;
     }
