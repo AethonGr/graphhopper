@@ -25,7 +25,7 @@ public class DBConnection {
             user = "root";
             password = "1234";
             db = "gtfs";
-            port = "3303";
+            port = "3306";
         }
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
