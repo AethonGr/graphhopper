@@ -289,7 +289,10 @@ public abstract class Entity implements Serializable {
                 String tableName_extended = tableName;
                 if (System.getenv("JP_DATABASE_TABLENAME_EXTENSION")!=null) {
                     tableName_extended = tableName_extended.concat(System.getenv("JP_DATABASE_TABLENAME_EXTENSION"));
+                }else{
+                    tableName_extended = tableName_extended.concat("_published");
                 }
+
                 // our SQL SELECT query.
                 // if you only need a few columns, specify them by name instead of using "*"
                 String query = "SELECT * FROM " + tableName_extended + " WHERE company_id = "+ S_company_id;
