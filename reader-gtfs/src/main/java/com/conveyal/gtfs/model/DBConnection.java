@@ -1,11 +1,16 @@
 package com.conveyal.gtfs.model;
 
+import com.graphhopper.gtfs.GTFSFeed;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.*;
 
 public class DBConnection {
     private Connection conn;
+    private static final Logger LOG = LoggerFactory.getLogger(GTFSFeed.class);
 
     public DBConnection() throws ClassNotFoundException, SQLException {
         String host = null;
@@ -27,12 +32,18 @@ public class DBConnection {
             db = "gtfs";
             port = "3306";
         }
+
+        String connection_url = "jdbc:mysql://" + host + ":3306/" + db;
+
+        LOG.info(connection_url);
+
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
-            this.conn = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + db, user, password);
-            System.out.println("Connected to database" + "jdbc:mysql://" + host + ":" + port + "/" + db + user + password);
+            this.conn = DriverManager.getConnection(connection_url, user, password);
+
         } catch (ClassNotFoundException | SQLException e){
-            System.out.println("Exception when connection to database! Exception : " + e);
+
+            LOG.error("Exception while connecting to database! Exception : " + e);
         }
 
 }
