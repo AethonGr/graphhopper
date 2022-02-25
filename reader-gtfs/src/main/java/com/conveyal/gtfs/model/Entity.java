@@ -245,6 +245,7 @@ public abstract class Entity implements Serializable {
          * @param zip the zip file from which to read a table
          */
         public void loadTable(ZipFile zip) throws IOException {
+            LOG.info("Loading GTFS table {} from txt file", tableName);
             ZipEntry entry = zip.getEntry(tableName + ".txt");
             if (entry == null) {
                 Enumeration<? extends ZipEntry> entries = zip.entries();
@@ -292,10 +293,9 @@ public abstract class Entity implements Serializable {
                 }else{
                     tableName_extended = tableName_extended.concat("_published");
                 }
-                System.out.println();
                 // our SQL SELECT query.
                 // if you only need a few columns, specify them by name instead of using "*"
-                String query = "SELECT * FROM " + tableName_extended + " WHERE company_id = "+ S_company_id;
+                String query = "SELECT * FROM " + tableName_extended + " WHERE company_id in ["+ S_company_id + "]";
                 // create the java statement
                 ResultSet resultRows = conn.ExecuteQuery(query);
 
@@ -338,15 +338,16 @@ public abstract class Entity implements Serializable {
                     }
                     loadOneRow(); // Call subclass method to produce an entity from the current row.
                 }
+                conn.getConn().close();
             } catch (SQLException ex) {
                 // handle any errors
-                System.out.println("SQLException: " + ex.getMessage());
-                System.out.println("SQLState: " + ex.getSQLState());
-                System.out.println("VendorError: " + ex.getErrorCode());
+                LOG.error("SQLException: " + ex.getMessage());
+                LOG.error("SQLState: " + ex.getSQLState());
+                LOG.error("VendorError: " + ex.getErrorCode());
             } catch (Exception e)
             {
-                System.err.println("Got an exception! ");
-                System.err.println(e.getMessage());
+                LOG.error("Got an exception! ");
+                LOG.error(e.getMessage());
             }
         }
     }
