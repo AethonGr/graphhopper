@@ -317,7 +317,7 @@ public abstract class Entity implements Serializable, Cloneable {
                 }
                 // our SQL SELECT query.
                 // if you only need a few columns, specify them by name instead of using "*"
-                String query = "SELECT * FROM " + tableName_extended + " WHERE company_id in ["+ S_company_id + "]";
+                String query = "SELECT * FROM " + tableName_extended + " WHERE company_id in ("+ S_company_id + ")";
                 // create the java statement
                 ResultSet resultRows = conn.ExecuteQuery(query);
 

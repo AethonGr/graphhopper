@@ -54,3 +54,14 @@ web/src/main/java/com/graphhopper/http/resources/oasa_graph/gtfs_0.p
 web/src/main/java/com/graphhopper/http/resources/oasa_graph/gtfs_0
 web/src/main/java/com/graphhopper/http/resources/oasa_graph/geometry
 web/src/main/java/com/graphhopper/http/resources/oasa_graph/edges
+web/src/main/java/com/graphhopper/http/resources/buildb/edges
+web/src/main/java/com/graphhopper/http/resources/buildb/geometry
+web/src/main/java/com/graphhopper/http/resources/buildb/gtfs_1
+web/src/main/java/com/graphhopper/http/resources/buildb/gtfs_1.p
+web/src/main/java/com/graphhopper/http/resources/buildb/location_index
+web/src/main/java/com/graphhopper/http/resources/buildb/nodes
+web/src/main/java/com/graphhopper/http/resources/buildb/properties
+web/src/main/java/com/graphhopper/http/resources/buildb/string_index_keys
+web/src/main/java/com/graphhopper/http/resources/buildb/string_index_vals
+web/src/main/java/com/graphhopper/http/resources/buildb/transit_schedule
+web/src/main/java/com/graphhopper/http/resources/buildb/transit_schedule.p
