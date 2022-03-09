@@ -1,5 +1,5 @@
 graphhopper:
-  company.id: 1
+  company.id: 1,2
   datareader.file: web/src/main/java/com/graphhopper/http/resources/athens.osm.pbf
   graph.location: web/src/main/java/com/graphhopper/http/resources/buildb
   load.from.db: true

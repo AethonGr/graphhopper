@@ -282,7 +282,7 @@ public abstract class Entity implements Serializable {
                 loadOneRow(); // Call subclass method to produce an entity from the current row.
             }
         }
-        public void loadTable(int company_id) throws IOException {
+        public void loadTable(String company_id) throws IOException {
             LOG.info("Loading GTFS table {} from database", tableName);
             try
             {   String S_company_id = String.valueOf(company_id);

@@ -97,8 +97,8 @@ public class GraphHopperGtfs extends GraphHopper {
             try {
                 if (ghConfig.getBool("load.from.db",false)) {
                     if (ghConfig.has("company.id")) {
-                        int company_id = ghConfig.getInt("company.id", 0);
-                        getGtfsStorage().loadGtfsFromDB("gtfs_" + ghConfig.getInt("company.id",0), company_id);
+                        String company_id = ghConfig.getString("company.id", "");
+                        getGtfsStorage().loadGtfsFromDB("gtfs_" + ghConfig.getString("company.id",""), company_id);
                     }
                     else {
                         throw new RuntimeException("No company id, please provide one");
