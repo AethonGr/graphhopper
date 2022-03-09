@@ -160,7 +160,7 @@ GTFSFeed implements Cloneable, Closeable {
         loaded = true;
     }
 
-    public void loadFromdb(int company_id, String fid) throws IOException {
+    public void loadFromdb(String company_id, String fid) throws IOException {
         if (this.loaded) throw new UnsupportedOperationException("Attempt to load GTFS into existing database");
 
         // NB we don't have a single CRC for the file, so we combine all the CRCs of the component files. NB we are not
@@ -228,7 +228,7 @@ GTFSFeed implements Cloneable, Closeable {
             LOG.error(error.getMessageWithContext());
         }
     }
-    public void loadFromFileAndLogErrors(int company_id) throws IOException {
+    public void loadFromFileAndLogErrors(String company_id) throws IOException {
         loadFromdb(company_id, null);
         for (GTFSError error : errors) {
             LOG.error(error.getMessageWithContext());

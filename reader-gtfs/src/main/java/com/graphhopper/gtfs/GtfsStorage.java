@@ -251,7 +251,7 @@ public class GtfsStorage {
 		}
 		this.gtfsFeedIds.add(id);
 	}
-	void loadGtfsFromDB(String id, int company_id) {
+	void loadGtfsFromDB(String id, String company_id) {
 		File dbFile = new File(dir.getLocation() + "/" + id);
 		try {
 			Files.deleteIfExists(dbFile.toPath());
