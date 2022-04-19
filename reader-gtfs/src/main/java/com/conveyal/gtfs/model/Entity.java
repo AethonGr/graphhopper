@@ -70,7 +70,7 @@ public abstract class Entity implements Serializable {
         protected final String tableName; // name of corresponding table without .txt
         protected final Set<String> missingRequiredColumns = new HashSet<>();
 
-        protected CsvReader reader;
+        protected ResultSet resultSet;
         protected long      row;
         // TODO "String column" that is set before any calls to avoid passing around the column name
 
@@ -96,8 +96,12 @@ public abstract class Entity implements Serializable {
          * Therefore the missing-field behavior is this separate function.
          * @return null if column was missing or field is empty
          */
-        private String getFieldCheckRequired(String column, boolean required) throws IOException {
-            String str = reader.get(column);
+        private String getFieldCheckRequired(String column, boolean required){
+            String str = null;
+            try {
+                str = resultSet.getString(column);
+            } catch (SQLException ignored) {}
+
             if (str == null) {
                 if (!missingRequiredColumns.contains(column)) {
                     feed.errors.add(new MissingColumnError(tableName, column));
@@ -109,6 +113,10 @@ public abstract class Entity implements Serializable {
                 }
                 str = null;
             }
+            if (str != null && str.matches("\\d{4}-\\d{2}-\\d{2}")){
+                str = str.replaceAll("-","");
+            }
+
             return str;
         }
 
@@ -122,7 +130,7 @@ public abstract class Entity implements Serializable {
         }
 
 
-        protected int getIntField (String column, boolean required, int min, int max, int defaultValue) throws IOException {            
+        protected int getIntField (String column, boolean required, int min, int max, int defaultValue) throws IOException {
             Map<Integer, Integer> mapping = null;            
             return getIntField (column, required, min, max, defaultValue, mapping);            
         }
@@ -272,13 +280,14 @@ public abstract class Entity implements Serializable {
             // but the GTFS spec says that "files that include the UTF byte order mark are acceptable"
             InputStream bis = new BOMInputStream(zis);
             CsvReader reader = new CsvReader(bis, ',', Charset.forName("UTF8"));
-            this.reader = reader;
+//            this.reader = reader;
             reader.readHeaders();
             while (reader.readRecord()) {
                 // reader.getCurrentRecord() is zero-based and does not include the header line, keep our own row count
                 if (++row % 500000 == 0) {
                     LOG.info("Record number {}", human(row));
                 }
+
                 loadOneRow(); // Call subclass method to produce an entity from the current row.
             }
         }
@@ -291,47 +300,27 @@ public abstract class Entity implements Serializable {
                 if (System.getenv("JP_DATABASE_TABLENAME_EXTENSION")!=null) {
                     tableName_extended = tableName_extended.concat(System.getenv("JP_DATABASE_TABLENAME_EXTENSION"));
                 }else{
-                    tableName_extended = tableName_extended.concat("_published");
+                    tableName_extended = tableName_extended.concat("");
                 }
-                // our SQL SELECT query.
-                // if you only need a few columns, specify them by name instead of using "*"
-                String query = "SELECT * FROM " + tableName_extended + " WHERE company_id in ("+ S_company_id + ")";
-                // create the java statement
-                ResultSet resultRows = conn.ExecuteQuery(query);
 
-                ResultSetMetaData rsmd = resultRows.getMetaData();
+                ResultSet column_rs = conn.ExecuteQuery("SELECT * FROM " + tableName_extended + " LIMIT 1");
+                ResultSetMetaData rsmd = column_rs.getMetaData();
                 int columnCount = rsmd.getColumnCount();
 
-                String result = "";
-
+                String columns = "";
                 for (int i = 1; i <= columnCount-1; i++) {
-                    result = result.concat(rsmd.getColumnName(i));
-                    if (i != columnCount-1) {
-                        result = result.concat(",");
-                    }
-                }
-                while (resultRows.next()) {
-                    result = result.concat("\n");
-                    for (int i = 1; i <= columnCount-1; i++) {
-                        final Object value = resultRows.getObject(i);
-                        String cell = (value == null ? "" : value.toString());
-                        if(cell.contains("-")){
-                            cell = cell.replace("-","");
-                        }
-                        result = result.concat("\"");
-                        result = result.concat(cell);
-                        result = result.concat("\"");
-                        if (i != columnCount-1) {
-                            result = result.concat(",");
-                        }
+                    columns = columns.concat(rsmd.getColumnName(i));
+                  if (i != columnCount-1) {
+                        columns = columns.concat(",");
                     }
                 }
 
-                CsvReader reader = new CsvReader(new StringReader(result));
+                String query;
+                query = "SELECT " + columns + " AS " + columns + " FROM " + tableName_extended + "  WHERE company_id = " + S_company_id + ";";
 
-                this.reader = reader;
-                reader.readHeaders();
-                while (reader.readRecord()) {
+                this.resultSet = conn.ExecuteQuery(query);
+
+                while (resultSet.next()) {
                     // reader.getCurrentRecord() is zero-based and does not include the header line, keep our own row count
                     if (++row % 500000 == 0) {
                         LOG.info("Record number {}", human(row));
