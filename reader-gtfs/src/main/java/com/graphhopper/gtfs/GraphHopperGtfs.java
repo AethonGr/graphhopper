@@ -91,8 +91,8 @@ public class GraphHopperGtfs extends GraphHopper {
                     int idx = 0;
                     List<String> gtfsFiles = ghConfig.has("gtfs.file") ? Arrays.asList(ghConfig.getString("gtfs.file", "").split(",")) : Collections.emptyList();
                     for (String gtfsFile : gtfsFiles) {
-                        getGtfsStorage().loadGtfsFromZipFileOrDirectory("gtfs_" + idx++, new File(gtfsFile));
-                    }
+                            getGtfsStorage().loadGtfsFromZipFileOrDirectory("gtfs_" + idx++, new File(gtfsFile));
+                        }
                 }
                 getGtfsStorage().postInit();
                 Map<String, Transfers> allTransfers = new HashMap<>();

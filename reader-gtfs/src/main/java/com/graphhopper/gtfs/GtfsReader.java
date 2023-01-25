@@ -18,6 +18,7 @@
 
 package com.graphhopper.gtfs;
 
+import com.carrotsearch.hppc.IntArrayList;
 import com.conveyal.gtfs.GTFSFeed;
 import com.carrotsearch.hppc.IntArrayList;
 import com.conveyal.gtfs.model.*;

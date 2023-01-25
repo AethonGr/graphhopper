@@ -305,6 +305,54 @@ public abstract class Entity implements Serializable, Cloneable {
                 loadOneRow(); // Call subclass method to produce an entity from the current row.
             }
         }
+        public void loadTable(String company_id) throws IOException {
+            LOG.info("Loading GTFS table {} from database", tableName);
+            try
+            {   String S_company_id = String.valueOf(company_id);
+                DBConnection conn = new DBConnection();
+                String tableName_extended = tableName;
+                if (System.getenv("JP_DATABASE_TABLENAME_EXTENSION")!=null) {
+                    tableName_extended = tableName_extended.concat(System.getenv("JP_DATABASE_TABLENAME_EXTENSION"));
+                }else{
+                    tableName_extended = tableName_extended.concat("");
+                }
+
+                ResultSet column_rs = conn.ExecuteQuery("SELECT * FROM " + tableName_extended + " LIMIT 1");
+                ResultSetMetaData rsmd = column_rs.getMetaData();
+                int columnCount = rsmd.getColumnCount();
+
+                String columns = "";
+                for (int i = 1; i <= columnCount-1; i++) {
+                    columns = columns.concat(rsmd.getColumnName(i));
+                  if (i != columnCount-1) {
+                        columns = columns.concat(",");
+                    }
+                }
+
+                String query;
+                query = "SELECT " + columns + " AS " + columns + " FROM " + tableName_extended + "  WHERE company_id = " + S_company_id + ";";
+
+                this.resultSet = conn.ExecuteQuery(query);
+
+                while (resultSet.next()) {
+                    // reader.getCurrentRecord() is zero-based and does not include the header line, keep our own row count
+                    if (++row % 500000 == 0) {
+                        LOG.info("Record number {}", human(row));
+                    }
+                    loadOneRow(); // Call subclass method to produce an entity from the current row.
+                }
+                conn.getConn().close();
+            } catch (SQLException ex) {
+                // handle any errors
+                LOG.error("SQLException: " + ex.getMessage());
+                LOG.error("SQLState: " + ex.getSQLState());
+                LOG.error("VendorError: " + ex.getErrorCode());
+            } catch (Exception e)
+            {
+                LOG.error("Got an exception! ");
+                LOG.error(e.getMessage());
+            }
+        }
         private void missing() {
             if (this.isRequired()) {
                 feed.errors.add(new MissingTableError(tableName));

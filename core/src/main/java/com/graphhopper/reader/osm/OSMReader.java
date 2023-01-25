@@ -157,8 +157,68 @@ public class OSMReader {
         if (!osmFile.exists())
             throw new IllegalStateException("Your specified OSM file does not exist:" + osmFile.getAbsolutePath());
 
-        if (!baseGraph.isInitialized())
-            throw new IllegalStateException("BaseGraph must be initialize before we can read OSM");
+        StopWatch sw1 = new StopWatch().start();
+        preProcess(osmFile);
+        sw1.stop();
+
+        StopWatch sw2 = new StopWatch().start();
+        writeOsmToGraph(osmFile);
+        sw2.stop();
+
+        LOGGER.info("time pass1:" + (int) sw1.getSeconds() + "s, "
+                + "pass2:" + (int) sw2.getSeconds() + "s, "
+                + "total:" + (int) (sw1.getSeconds() + sw2.getSeconds()) + "s");
+    }
+
+    /**jbk
+     * Preprocessing of OSM file to select nodes which are used for highways. This allows a more
+     * compact graph data structure.
+     */
+    void preProcess(File osmFile) {
+        LOGGER.info("Starting to process OSM file: '" + osmFile + "'");
+        try (OSMInput in = openOsmInputFile(osmFile)) {
+            long tmpWayCounter = 1;
+            long tmpRelationCounter = 1;
+            ReaderElement item;
+            while ((item = in.getNext()) != null) {
+                if (item.isType(ReaderElement.WAY)) {
+                    final ReaderWay way = (ReaderWay) item;
+                    boolean valid = filterWay(way);
+                    if (valid) {
+                        LongIndexedContainer wayNodes = way.getNodes();
+                        int s = wayNodes.size();
+                        for (int index = 0; index < s; index++) {
+                            prepareHighwayNode(wayNodes.get(index));
+                        }
+
+                        if (++tmpWayCounter % 10_000_000 == 0) {
+                            LOGGER.info(nf(tmpWayCounter) + " (preprocess), osmIdMap:" + nf(getNodeMap().getSize()) + " ("
+                                    + getNodeMap().getMemoryUsage() + "MB) " + Helper.getMemInfo());
+                        }
+                    }
+                } else if (item.isType(ReaderElement.RELATION)) {
+                    final ReaderRelation relation = (ReaderRelation) item;
+                    if (!relation.isMetaRelation() && relation.hasTag("type", "route"))
+                        prepareWaysWithRelationInfo(relation);
+
+                    if (relation.hasTag("type", "restriction")) {
+                        prepareRestrictionRelation(relation);
+                    }
+
+                    if (++tmpRelationCounter % 100_000 == 0) {
+                        LOGGER.info(nf(tmpRelationCounter) + " (preprocess), osmWayMap:" + nf(getRelFlagsMapSize())
+                                + ", " + Helper.getMemInfo());
+                    }
+                } else if (item.isType(ReaderElement.FILEHEADER)) {
+                    final OSMFileHeader fileHeader = (OSMFileHeader) item;
+                    osmDataDate = Helper.createFormatter().parse(fileHeader.getTag("timestamp"));
+                }
+
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("Problem while parsing file", ex);
+        }
+    }
 
         WaySegmentParser waySegmentParser = new WaySegmentParser.Builder(baseGraph.getNodeAccess())
                 .setDirectory(baseGraph.getDirectory())
