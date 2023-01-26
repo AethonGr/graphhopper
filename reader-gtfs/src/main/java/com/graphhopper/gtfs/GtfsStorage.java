@@ -22,7 +22,6 @@ import com.carrotsearch.hppc.IntIntHashMap;
 import com.carrotsearch.hppc.IntObjectHashMap;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
 import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.conveyal.gtfs.GTFSFeed;
 import com.conveyal.gtfs.model.Fare;
 import com.graphhopper.storage.Directory;
 import com.graphhopper.storage.index.LineIntIndex;
@@ -245,18 +244,6 @@ public class GtfsStorage {
 			Files.deleteIfExists(dbFile.toPath());
 			GTFSFeed feed = new GTFSFeed(dbFile);
 			feed.loadFromFileAndLogErrors(zipFileOrDirectory);
-			this.gtfsFeeds.put(id, feed);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		this.gtfsFeedIds.add(id);
-	}
-	void loadGtfsFromDB(String id, String company_id) {
-		File dbFile = new File(dir.getLocation() + "/" + id);
-		try {
-			Files.deleteIfExists(dbFile.toPath());
-			GTFSFeed feed = new GTFSFeed(dbFile);
-			feed.loadFromFileAndLogErrors(company_id);
 			this.gtfsFeeds.put(id, feed);
 		} catch (IOException e) {
 			throw new RuntimeException(e);

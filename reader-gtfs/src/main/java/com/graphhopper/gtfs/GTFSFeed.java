@@ -228,12 +228,7 @@ GTFSFeed implements Cloneable, Closeable {
             LOG.error(error.getMessageWithContext());
         }
     }
-    public void loadFromFileAndLogErrors(String company_id) throws IOException {
-        loadFromdb(company_id, null);
-        for (GTFSError error : errors) {
-            LOG.error(error.getMessageWithContext());
-        }
-    }
+
     public void loadFromFileAndLogErrors(String company_id) throws IOException {
         loadFromdb(company_id, null);
         for (GTFSError error : errors) {

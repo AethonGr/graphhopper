@@ -21,8 +21,6 @@ package com.graphhopper.gtfs;
 import com.carrotsearch.hppc.IntArrayList;
 import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntLongHashMap;
-import com.conveyal.gtfs.model.Fare;
-import com.conveyal.gtfs.GTFSFeed;
 import com.conveyal.gtfs.model.Frequency;
 import com.conveyal.gtfs.model.StopTime;
 import com.conveyal.gtfs.model.Trip;

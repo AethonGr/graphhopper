@@ -76,7 +76,7 @@ public abstract class Entity implements Serializable, Cloneable {
         protected final Set<String> missingRequiredColumns = new HashSet<>();
 
         protected ResultSet resultSet;
-        protected long      row;
+        protected long row;
         // TODO "String column" that is set before any calls to avoid passing around the column name
 
         public Loader(GTFSFeed feed, String tableName) {
@@ -84,7 +84,9 @@ public abstract class Entity implements Serializable, Cloneable {
             this.tableName = tableName;
         }
 
-        /** @return whether the number actual is in the range [min, max] */
+        /**
+         * @return whether the number actual is in the range [min, max]
+         */
         protected boolean checkRangeInclusive(double min, double max, double actual) {
             if (actual < min || actual > max) {
                 feed.errors.add(new RangeError(tableName, row, null, min, max, actual)); // TODO set column name in loader so it's available in methods
@@ -99,13 +101,15 @@ public abstract class Entity implements Serializable, Cloneable {
          * I was originally just calling getStringField from the other getXField functions as a first step to get
          * the missing-field check. But we don't want deduplication performed on strings that aren't being retained.
          * Therefore the missing-field behavior is this separate function.
+         *
          * @return null if column was missing or field is empty
          */
-        private String getFieldCheckRequired(String column, boolean required){
+        private String getFieldCheckRequired(String column, boolean required) {
             String str = null;
             try {
                 str = resultSet.getString(column);
-            } catch (SQLException ignored) {}
+            } catch (SQLException ignored) {
+            }
 
             if (str == null) {
                 if (!missingRequiredColumns.contains(column)) {
@@ -118,14 +122,16 @@ public abstract class Entity implements Serializable, Cloneable {
                 }
                 str = null;
             }
-            if (str != null && str.matches("\\d{4}-\\d{2}-\\d{2}")){
-                str = str.replaceAll("-","");
+            if (str != null && str.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                str = str.replaceAll("-", "");
             }
 
             return str;
         }
 
-        /** @return the given column from the current row as a deduplicated String. */
+        /**
+         * @return the given column from the current row as a deduplicated String.
+         */
         protected String getStringField(String column, boolean required) throws IOException {
             return getFieldCheckRequired(column, required);
         }
@@ -135,9 +141,9 @@ public abstract class Entity implements Serializable, Cloneable {
         }
 
 
-        protected int getIntField (String column, boolean required, int min, int max, int defaultValue) throws IOException {
-            Map<Integer, Integer> mapping = null;            
-            return getIntField (column, required, min, max, defaultValue, mapping);            
+        protected int getIntField(String column, boolean required, int min, int max, int defaultValue) throws IOException {
+            Map<Integer, Integer> mapping = null;
+            return getIntField(column, required, min, max, defaultValue, mapping);
         }
 
         protected int getIntField(String column, boolean required, int min, int max, int defaultValue, final Map<Integer, Integer> mapping) throws IOException {
@@ -161,12 +167,13 @@ public abstract class Entity implements Serializable, Cloneable {
 
         /**
          * Fetch the given column of the current row, and interpret it as a time in the format HH:MM:SS.
+         *
          * @return the time value in seconds since midnight
          */
         protected int getTimeField(String column, boolean required) throws IOException {
             String str = getFieldCheckRequired(column, required);
             int val = INT_MISSING;
-            
+
             if (str != null) {
                 String[] fields = str.split(":");
                 if (fields.length != 3) {
@@ -185,12 +192,13 @@ public abstract class Entity implements Serializable, Cloneable {
                     }
                 }
             }
-            
+
             return val;
         }
 
         /**
          * Fetch the given column of the current row, and interpret it as a date in the format YYYYMMDD.
+         *
          * @return the date value as Java LocalDate, or null if it could not be parsed.
          */
         protected LocalDate getDateField(String column, boolean required) throws IOException {
@@ -207,6 +215,7 @@ public abstract class Entity implements Serializable, Cloneable {
 
         /**
          * Fetch the given column of the current row, and interpret it as a URL.
+         *
          * @return the URL, or null if the field was missing or empty.
          */
         protected URL getUrlField(String column, boolean required) throws IOException {
@@ -251,7 +260,9 @@ public abstract class Entity implements Serializable, Cloneable {
 
         protected abstract boolean isRequired();
 
-        /** Implemented by subclasses to read one row, produce one GTFS entity, and store that entity in a map. */
+        /**
+         * Implemented by subclasses to read one row, produce one GTFS entity, and store that entity in a map.
+         */
         protected abstract void loadOneRow() throws IOException;
 
         /**
@@ -273,18 +284,18 @@ public abstract class Entity implements Serializable, Cloneable {
             } else {
                 ZipFile zip = new ZipFile(zipOrDirectory);
                 LOG.info("Loading GTFS table {} from txt file", tableName);
-            ZipEntry entry = zip.getEntry(tableName + ".txt");
-            if (entry == null) {
-                Enumeration<? extends ZipEntry> entries = zip.entries();
-                // check if table is contained within sub-directory
-                while (entries.hasMoreElements()) {
-                    ZipEntry e = entries.nextElement();
-                    if (e.getName().endsWith(tableName + ".txt")) {
-                        entry = e;
-                        feed.errors.add(new TableInSubdirectoryError(tableName, entry.getName().replace(tableName + ".txt", "")));
+                ZipEntry entry = zip.getEntry(tableName + ".txt");
+                if (entry == null) {
+                    Enumeration<? extends ZipEntry> entries = zip.entries();
+                    // check if table is contained within sub-directory
+                    while (entries.hasMoreElements()) {
+                        ZipEntry e = entries.nextElement();
+                        if (e.getName().endsWith(tableName + ".txt")) {
+                            entry = e;
+                            feed.errors.add(new TableInSubdirectoryError(tableName, entry.getName().replace(tableName + ".txt", "")));
+                        }
                     }
-                }
-                 missing();
+                    missing();
                     if (entry == null) return;
                 }
                 zis = zip.getInputStream(entry);
@@ -305,54 +316,7 @@ public abstract class Entity implements Serializable, Cloneable {
                 loadOneRow(); // Call subclass method to produce an entity from the current row.
             }
         }
-        public void loadTable(String company_id) throws IOException {
-            LOG.info("Loading GTFS table {} from database", tableName);
-            try
-            {   String S_company_id = String.valueOf(company_id);
-                DBConnection conn = new DBConnection();
-                String tableName_extended = tableName;
-                if (System.getenv("JP_DATABASE_TABLENAME_EXTENSION")!=null) {
-                    tableName_extended = tableName_extended.concat(System.getenv("JP_DATABASE_TABLENAME_EXTENSION"));
-                }else{
-                    tableName_extended = tableName_extended.concat("");
-                }
 
-                ResultSet column_rs = conn.ExecuteQuery("SELECT * FROM " + tableName_extended + " LIMIT 1");
-                ResultSetMetaData rsmd = column_rs.getMetaData();
-                int columnCount = rsmd.getColumnCount();
-
-                String columns = "";
-                for (int i = 1; i <= columnCount-1; i++) {
-                    columns = columns.concat(rsmd.getColumnName(i));
-                  if (i != columnCount-1) {
-                        columns = columns.concat(",");
-                    }
-                }
-
-                String query;
-                query = "SELECT " + columns + " AS " + columns + " FROM " + tableName_extended + "  WHERE company_id = " + S_company_id + ";";
-
-                this.resultSet = conn.ExecuteQuery(query);
-
-                while (resultSet.next()) {
-                    // reader.getCurrentRecord() is zero-based and does not include the header line, keep our own row count
-                    if (++row % 500000 == 0) {
-                        LOG.info("Record number {}", human(row));
-                    }
-                    loadOneRow(); // Call subclass method to produce an entity from the current row.
-                }
-                conn.getConn().close();
-            } catch (SQLException ex) {
-                // handle any errors
-                LOG.error("SQLException: " + ex.getMessage());
-                LOG.error("SQLState: " + ex.getSQLState());
-                LOG.error("VendorError: " + ex.getErrorCode());
-            } catch (Exception e)
-            {
-                LOG.error("Got an exception! ");
-                LOG.error(e.getMessage());
-            }
-        }
         private void missing() {
             if (this.isRequired()) {
                 feed.errors.add(new MissingTableError(tableName));
@@ -360,16 +324,16 @@ public abstract class Entity implements Serializable, Cloneable {
                 LOG.info("Table {} was missing but it is not required.", tableName);
             }
         }
-    }
+
         public void loadTable(String company_id) throws IOException {
             LOG.info("Loading GTFS table {} from database", tableName);
-            try
-            {   String S_company_id = String.valueOf(company_id);
+            try {
+                String S_company_id = String.valueOf(company_id);
                 DBConnection conn = new DBConnection();
                 String tableName_extended = tableName;
-                if (System.getenv("JP_DATABASE_TABLENAME_EXTENSION")!=null) {
+                if (System.getenv("JP_DATABASE_TABLENAME_EXTENSION") != null) {
                     tableName_extended = tableName_extended.concat(System.getenv("JP_DATABASE_TABLENAME_EXTENSION"));
-                }else{
+                } else {
                     tableName_extended = tableName_extended.concat("");
                 }
 
@@ -378,9 +342,9 @@ public abstract class Entity implements Serializable, Cloneable {
                 int columnCount = rsmd.getColumnCount();
 
                 String columns = "";
-                for (int i = 1; i <= columnCount-1; i++) {
+                for (int i = 1; i <= columnCount - 1; i++) {
                     columns = columns.concat(rsmd.getColumnName(i));
-                  if (i != columnCount-1) {
+                    if (i != columnCount - 1) {
                         columns = columns.concat(",");
                     }
                 }
@@ -403,12 +367,12 @@ public abstract class Entity implements Serializable, Cloneable {
                 LOG.error("SQLException: " + ex.getMessage());
                 LOG.error("SQLState: " + ex.getSQLState());
                 LOG.error("VendorError: " + ex.getErrorCode());
-            } catch (Exception e)
-            {
+            } catch (Exception e) {
                 LOG.error("Got an exception! ");
                 LOG.error(e.getMessage());
             }
         }
+
     }
 
 /**
