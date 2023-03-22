@@ -1,0 +1,41 @@
+graphhopper:
+  company.id: '48'
+  datareader.file: ./assets/map.osm
+  graph.dataaccess.default_type: RAM_STORE
+  graph.do_sort: true
+  graph.location: graph
+  import.osm.ignored_highways: cycleway,pedestrian,motorway,trunk
+  load.from.db: true
+  prepare.min_network_size: 200
+  profiles:
+  - name: foot
+    vehicle: foot
+    weighting: fastest
+  - name: car
+    vehicle: car
+    weighting: fastest
+  routing.non_ch.max_waypoint_distance: 1000000
+logging:
+  appenders:
+  - archive: true
+    archived_file_count: 30
+    archived_log_filename_pattern: ./logs/graphhopper-%d.log.gz
+    current_log_filename: algos/graphhopper/logs/48/graphhopper.log
+    log_format: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+    never_block: true
+    time_zone: UTC
+    type: file
+  - log_format: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+    time_zone: UTC
+    type: console
+server:
+  admin_connectors:
+  - bind_host: localhost
+    port: 7003
+    type: http
+  application_connectors:
+  - bind_host: localhost
+    port: 7002
+    type: http
+  request_log:
+    appenders: []

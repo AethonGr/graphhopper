@@ -23,6 +23,7 @@ import com.graphhopper.matching.Observation;
 import com.graphhopper.util.*;
 import com.graphhopper.util.shapes.GHPoint;
 import com.graphhopper.util.shapes.GHPoint3D;
+import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -221,6 +222,20 @@ public class GpxConversions {
             }
         }
         return gpxEntries;
+    }
+
+    public static List<Observation> getMeasurementsFromArgs(Namespace args) {
+        ArrayList<Observation> gpsEntries = new ArrayList<>();
+        String[] lats = args.getString("lats").split(",");
+        String[] lons = args.getString("lons").split(",");;
+        String[] eles = args.getString("eles").split(",");;
+
+        for (int i = 0; i < lats.length; i++) {
+            gpsEntries.add(new Observation(new GHPoint3D(Double.parseDouble(lats[i]),
+                                                         Double.parseDouble(lons[i]),
+                                                         Double.parseDouble(eles[i]))));
+        }
+        return gpsEntries;
     }
 
     /**
