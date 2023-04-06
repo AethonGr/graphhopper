@@ -163,14 +163,6 @@ GTFSFeed implements Cloneable, Closeable {
     public void loadFromdb(String company_id, String fid) throws IOException {
         if (this.loaded) throw new UnsupportedOperationException("Attempt to load GTFS into existing database");
 
-        // NB we don't have a single CRC for the file, so we combine all the CRCs of the component files. NB we are not
-        // simply summing the CRCs because CRCs are (I assume) uniformly randomly distributed throughout the width of a
-        // long, so summing them is a convolution which moves towards a Gaussian with mean 0 (i.e. more concentrated
-        // probability in the center), degrading the quality of the hash. Instead we XOR. Assuming each bit is independent,
-        // this will yield a nice uniformly distributed result, because when combining two bits there is an equal
-        // probability of any input, which means an equal probability of any output. At least I think that's all correct.
-        // Repeated XOR is not commutative but zip.stream returns files in the order they are in the central directory
-        // of the zip file, so that's not a problem.
 
         new FeedInfo.Loader(this).loadTable(company_id);
         // maybe we should just point to the feed object itself instead of its ID, and null out its stoptimes map after loading
@@ -229,7 +221,7 @@ GTFSFeed implements Cloneable, Closeable {
         }
     }
 
-    public void loadFromFileAndLogErrors(String company_id) throws IOException {
+    public void loadFromDBAndLogErrors(String company_id) throws IOException {
         loadFromdb(company_id, null);
         for (GTFSError error : errors) {
             LOG.error(error.getMessageWithContext());

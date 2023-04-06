@@ -255,7 +255,7 @@ public class GtfsStorage {
 		try {
 			Files.deleteIfExists(dbFile.toPath());
 			GTFSFeed feed = new GTFSFeed(dbFile);
-			feed.loadFromFileAndLogErrors(company_id);
+			feed.loadFromDBAndLogErrors(company_id);
 			this.gtfsFeeds.put(id, feed);
 		} catch (IOException e) {
 			throw new RuntimeException(e);

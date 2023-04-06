@@ -26,9 +26,9 @@ public class DBConnection {
             db = System.getenv("JP_DATABASE_NAME");
             port = System.getenv("DATABASE_PORT");
         } else {
-            host = "192.168.2.200";
-            user = "external";
-            password = "";
+            host = "localhost";
+            user = "root";
+            password = "12345678";
             db = "gtfs";
             port = "3306";
         }

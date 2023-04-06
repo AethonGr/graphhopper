@@ -1,11 +1,8 @@
 graphhopper:
-  company.id: '48'
-  datareader.file: ./assets/map.osm
-  graph.dataaccess.default_type: RAM_STORE
-  graph.do_sort: true
-  graph.location: graph
+  datareader.file: C:\Users\aetho\Documents\Transitool\graphhopper\assets\map.osm
+  graph.location: C:\Users\aetho\Documents\Transitool\graphhopper\assets\graph
+  gtfs.file: C:\Users\aetho\Documents\Transitool\graphhopper\assets\GTFS Iraklio 06.10.2021.zip
   import.osm.ignored_highways: cycleway,pedestrian,motorway,trunk
-  load.from.db: true
   prepare.min_network_size: 200
   profiles:
   - name: foot
@@ -19,8 +16,8 @@ logging:
   appenders:
   - archive: true
     archived_file_count: 30
-    archived_log_filename_pattern: ./logs/graphhopper-%d.log.gz
-    current_log_filename: algos/graphhopper/logs/48/graphhopper.log
+    archived_log_filename_pattern: graphhopper-%d.log.gz
+    current_log_filename: graphhopper.log
     log_format: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
     never_block: true
     time_zone: UTC
@@ -31,11 +28,11 @@ logging:
 server:
   admin_connectors:
   - bind_host: localhost
-    port: 7003
+    port: 7005
     type: http
   application_connectors:
   - bind_host: localhost
-    port: 7002
+    port: 7004
     type: http
   request_log:
     appenders: []
