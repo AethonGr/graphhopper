@@ -75,6 +75,7 @@ public abstract class Entity implements Serializable, Cloneable {
         protected final String tableName; // name of corresponding table without .txt
         protected final Set<String> missingRequiredColumns = new HashSet<>();
 
+        protected CsvReader reader;
         protected ResultSet resultSet;
         protected long row;
         // TODO "String column" that is set before any calls to avoid passing around the column name
@@ -84,9 +85,7 @@ public abstract class Entity implements Serializable, Cloneable {
             this.tableName = tableName;
         }
 
-        /**
-         * @return whether the number actual is in the range [min, max]
-         */
+        /** @return whether the number actual is in the range [min, max] */
         protected boolean checkRangeInclusive(double min, double max, double actual) {
             if (actual < min || actual > max) {
                 feed.errors.add(new RangeError(tableName, row, null, min, max, actual)); // TODO set column name in loader so it's available in methods
@@ -101,14 +100,14 @@ public abstract class Entity implements Serializable, Cloneable {
          * I was originally just calling getStringField from the other getXField functions as a first step to get
          * the missing-field check. But we don't want deduplication performed on strings that aren't being retained.
          * Therefore the missing-field behavior is this separate function.
-         *
          * @return null if column was missing or field is empty
          */
-        private String getFieldCheckRequired(String column, boolean required) {
+        private String getFieldCheckRequired(String column, boolean required) throws IOException {
             String str = null;
             try {
                 str = resultSet.getString(column);
-            } catch (SQLException ignored) {
+            } catch (Exception e) {
+                str = reader.get(column);
             }
 
             if (str == null) {
@@ -122,16 +121,10 @@ public abstract class Entity implements Serializable, Cloneable {
                 }
                 str = null;
             }
-            if (str != null && str.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                str = str.replaceAll("-", "");
-            }
-
             return str;
         }
 
-        /**
-         * @return the given column from the current row as a deduplicated String.
-         */
+        /** @return the given column from the current row as a deduplicated String. */
         protected String getStringField(String column, boolean required) throws IOException {
             return getFieldCheckRequired(column, required);
         }
@@ -141,9 +134,9 @@ public abstract class Entity implements Serializable, Cloneable {
         }
 
 
-        protected int getIntField(String column, boolean required, int min, int max, int defaultValue) throws IOException {
+        protected int getIntField (String column, boolean required, int min, int max, int defaultValue) throws IOException {
             Map<Integer, Integer> mapping = null;
-            return getIntField(column, required, min, max, defaultValue, mapping);
+            return getIntField (column, required, min, max, defaultValue, mapping);
         }
 
         protected int getIntField(String column, boolean required, int min, int max, int defaultValue, final Map<Integer, Integer> mapping) throws IOException {
@@ -167,7 +160,6 @@ public abstract class Entity implements Serializable, Cloneable {
 
         /**
          * Fetch the given column of the current row, and interpret it as a time in the format HH:MM:SS.
-         *
          * @return the time value in seconds since midnight
          */
         protected int getTimeField(String column, boolean required) throws IOException {
@@ -198,7 +190,6 @@ public abstract class Entity implements Serializable, Cloneable {
 
         /**
          * Fetch the given column of the current row, and interpret it as a date in the format YYYYMMDD.
-         *
          * @return the date value as Java LocalDate, or null if it could not be parsed.
          */
         protected LocalDate getDateField(String column, boolean required) throws IOException {
@@ -215,7 +206,6 @@ public abstract class Entity implements Serializable, Cloneable {
 
         /**
          * Fetch the given column of the current row, and interpret it as a URL.
-         *
          * @return the URL, or null if the field was missing or empty.
          */
         protected URL getUrlField(String column, boolean required) throws IOException {
@@ -260,9 +250,7 @@ public abstract class Entity implements Serializable, Cloneable {
 
         protected abstract boolean isRequired();
 
-        /**
-         * Implemented by subclasses to read one row, produce one GTFS entity, and store that entity in a map.
-         */
+        /** Implemented by subclasses to read one row, produce one GTFS entity, and store that entity in a map. */
         protected abstract void loadOneRow() throws IOException;
 
         /**
@@ -283,7 +271,6 @@ public abstract class Entity implements Serializable, Cloneable {
                 LOG.info("Loading GTFS table {} from {}", tableName, path);
             } else {
                 ZipFile zip = new ZipFile(zipOrDirectory);
-                LOG.info("Loading GTFS table {} from txt file", tableName);
                 ZipEntry entry = zip.getEntry(tableName + ".txt");
                 if (entry == null) {
                     Enumeration<? extends ZipEntry> entries = zip.entries();
@@ -304,15 +291,13 @@ public abstract class Entity implements Serializable, Cloneable {
             // skip any byte order mark that may be present. Files must be UTF-8,
             // but the GTFS spec says that "files that include the UTF byte order mark are acceptable"
             InputStream bis = new BOMInputStream(zis);
-            CsvReader reader = new CsvReader(bis, ',', Charset.forName("UTF8"));
-//            this.reader = reader;
+            this.reader = new CsvReader(bis, ',', Charset.forName("UTF8"));
             reader.readHeaders();
             while (reader.readRecord()) {
                 // reader.getCurrentRecord() is zero-based and does not include the header line, keep our own row count
                 if (++row % 500000 == 0) {
                     LOG.info("Record number {}", human(row));
                 }
-
                 loadOneRow(); // Call subclass method to produce an entity from the current row.
             }
         }
@@ -375,7 +360,7 @@ public abstract class Entity implements Serializable, Cloneable {
 
     }
 
-/**
+    /**
      * An output stream that cannot be closed. CSVWriters try to close their output streams when they are garbage-collected,
      * which breaks if another CSV writer is still writing to the ZIP file.
      *
@@ -397,13 +382,13 @@ public abstract class Entity implements Serializable, Cloneable {
     /**
      * Write this entity to a CSV file. This should be subclassed in subclasses of Entity.
      * The following (abstract) methods should be overridden in a subclass:
-     * 
+     *
      * writeHeaders(): write the headers to the CsvWriter writer.
      * writeRow(E): write the passed-in object to the CsvWriter writer, potentially using the write*Field methods.
      * iterator(): return an iterator over objects of this class (note that the feed is available at this.feed
      * public Writer (GTFSFeed feed): this should super to Writer(GTFSFeed feed, String tableName), with the table name
      * defined. 
-     * 
+     *
      * @author mattwigway
      */
     public static abstract class Writer<E extends Entity> {
@@ -452,7 +437,7 @@ public abstract class Entity implements Serializable, Cloneable {
             this.writeHeaders();
 
             // write rows until there are none left.
-            row = 0;        	
+            row = 0;
             Iterator<E> iter = this.iterator();
             while (iter.hasNext()) {
                 if (++row % 500000 == 0) {
@@ -492,7 +477,7 @@ public abstract class Entity implements Serializable, Cloneable {
                 writeStringField("");
                 return;
             }
-            
+
             writeStringField(convertToGtfsTime(secsSinceMidnight));
         }
 
@@ -522,12 +507,12 @@ public abstract class Entity implements Serializable, Cloneable {
             // NaN's represent missing values
             if (Double.isNaN(val))
                 writeStringField("");
-            
-            // control file size: don't use unnecessary precision
-            // This is usually used for coordinates; one ten-millionth of a degree at the equator is 1.1cm,
-            // and smaller elsewhere on earth, plenty precise enough.
-            // On Jupiter, however, it's a different story.
-            // Use the US locale so that . is used as the decimal separator
+
+                // control file size: don't use unnecessary precision
+                // This is usually used for coordinates; one ten-millionth of a degree at the equator is 1.1cm,
+                // and smaller elsewhere on earth, plenty precise enough.
+                // On Jupiter, however, it's a different story.
+                // Use the US locale so that . is used as the decimal separator
             else
                 writeStringField(String.format(Locale.US, "%.7f", val));
         }
