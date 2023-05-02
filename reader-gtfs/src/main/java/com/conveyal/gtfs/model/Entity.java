@@ -102,26 +102,36 @@ public abstract class Entity implements Serializable, Cloneable {
          * Therefore the missing-field behavior is this separate function.
          * @return null if column was missing or field is empty
          */
-        private String getFieldCheckRequired(String column, boolean required) throws IOException {
+        private String getFieldCheckRequired(String column, boolean required) {
             String str = null;
             try {
-                str = resultSet.getString(column);
-            } catch (Exception e) {
-                str = reader.get(column);
-            }
+                if (resultSet != null) {
+                    str = resultSet.getString(column);
+                    if (str != null){
+                        str = str.replace("-","");
+                    }
+                } else {
+                    str = reader.get(column);
+                }
 
-            if (str == null) {
-                if (!missingRequiredColumns.contains(column)) {
-                    feed.errors.add(new MissingColumnError(tableName, column));
-                    missingRequiredColumns.add(column);
+                if (str == null) {
+                    if (!missingRequiredColumns.contains(column)) {
+                        feed.errors.add(new MissingColumnError(tableName, column));
+                        missingRequiredColumns.add(column);
+                    }
+                } else if (str.isEmpty()) {
+                    if (required) {
+                        feed.errors.add(new EmptyFieldError(tableName, row, column));
+                    }
+                    str = null;
                 }
-            } else if (str.isEmpty()) {
-                if (required) {
-                    feed.errors.add(new EmptyFieldError(tableName, row, column));
-                }
-                str = null;
+                return str;
             }
-            return str;
+            catch (SQLException ignored) {
+                return null;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         /** @return the given column from the current row as a deduplicated String. */
@@ -387,7 +397,7 @@ public abstract class Entity implements Serializable, Cloneable {
      * writeRow(E): write the passed-in object to the CsvWriter writer, potentially using the write*Field methods.
      * iterator(): return an iterator over objects of this class (note that the feed is available at this.feed
      * public Writer (GTFSFeed feed): this should super to Writer(GTFSFeed feed, String tableName), with the table name
-     * defined. 
+     * defined.
      *
      * @author mattwigway
      */
