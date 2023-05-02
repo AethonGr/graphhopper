@@ -1,7 +1,8 @@
 graphhopper:
   datareader.file: C:\Users\aetho\Documents\Transitool\graphhopper\assets\map.osm
   graph.location: C:\Users\aetho\Documents\Transitool\graphhopper\assets\graph
-  gtfs.file: C:\Users\aetho\Documents\Transitool\graphhopper\assets\Piraeus GTFS 25.08.2022 (1).zip
+  company.id: "48, 49"
+  load.from.db: true
   import.osm.ignored_highways: cycleway,pedestrian,motorway,trunk
   prepare.min_network_size: 200
   profiles:
@@ -28,11 +29,11 @@ logging:
 server:
   admin_connectors:
   - bind_host: localhost
-    port: 7005
+    port: 7009
     type: http
   application_connectors:
   - bind_host: localhost
-    port: 7004
+    port: 7008
     type: http
   request_log:
     appenders: []
