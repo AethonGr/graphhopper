@@ -12,20 +12,19 @@ public class DBConnection {
     private Connection conn;
     private static final Logger LOG = LoggerFactory.getLogger(GTFSFeed.class);
 
-    public DBConnection() throws ClassNotFoundException, SQLException {
+    public DBConnection() throws  SQLException {
         String host = null;
         String user = null;
         String password = null;
         String db = null;
         String port = null;
-        if (System.getenv("DATABASE_HOST") != null || System.getenv("DATABASE_USER") != null ||
-                System.getenv("DATABASE_PASSWORD") != null) {
+        try {
             host = System.getenv("DATABASE_HOST");
             user = System.getenv("DATABASE_USER");
             password = System.getenv("DATABASE_PASSWORD");
-            db = System.getenv("JP_DATABASE_NAME");
+            db = System.getenv("JOURNEY_PLANNING_DB_NAME");
             port = System.getenv("DATABASE_PORT");
-        } else {
+        } catch (Exception e){
             host = "localhost";
             user = "root";
             password = "12345678";
