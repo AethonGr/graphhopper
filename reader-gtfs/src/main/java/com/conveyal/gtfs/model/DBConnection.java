@@ -18,12 +18,12 @@ public class DBConnection {
         String password = null;
         String db = null;
         String port = null;
-        if (System.getenv("DATABASE_HOST") != null || System.getenv("DATABASE_USER") != null || System.getenv("DATABASE_PASSWORD") != null) {
-            host = System.getenv("DATABASE_HOST");
-            user = System.getenv("DATABASE_USER");
-            password = System.getenv("DATABASE_PASSWORD");
+        if (System.getenv("JOURNEY_PLANNING_DB_HOST") != null || System.getenv("JOURNEY_PLANNING_DB_USER") != null || System.getenv("JOURNEY_PLANNING_DB_PASSWORD") != null) {
+            host = System.getenv("JOURNEY_PLANNING_DB_HOST");
+            user = System.getenv("JOURNEY_PLANNING_DB_USER");
+            password = System.getenv("JOURNEY_PLANNING_DB_PASSWORD");
             db = System.getenv("JOURNEY_PLANNING_DB_NAME");
-            port = System.getenv("DATABASE_PORT");
+            port = System.getenv("JOURNEY_PLANNING_DB_PORT");
         } else {
             host = "localhost";
             user = "root";
