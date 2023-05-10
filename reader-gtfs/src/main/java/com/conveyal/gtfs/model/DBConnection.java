@@ -18,16 +18,16 @@ public class DBConnection {
         String password = null;
         String db = null;
         String port = null;
-        if (System.getenv("JOURNEY_PLANNING_DB_HOST") != null || System.getenv("JOURNEY_PLANNING_DB_USER") != null || System.getenv("JOURNEY_PLANNING_DB_PASSWORD") != null) {
-            host = System.getenv("JOURNEY_PLANNING_DB_HOST");
-            user = System.getenv("JOURNEY_PLANNING_DB_USER");
-            password = System.getenv("JOURNEY_PLANNING_DB_PASSWORD");
-            db = System.getenv("JOURNEY_PLANNING_DB_NAME");
-            port = System.getenv("JOURNEY_PLANNING_DB_PORT");
+        if (System.getenv("LC_JOURNEY_PLANNING_DB_HOST") != null || System.getenv("LC_JOURNEY_PLANNING_DB_USER") != null || System.getenv("LC_JOURNEY_PLANNING_DB_PASSWORD") != null) {
+            host = System.getenv("LC_JOURNEY_PLANNING_DB_HOST");
+            user = System.getenv("LC_JOURNEY_PLANNING_DB_USER");
+            password = System.getenv("LC_JOURNEY_PLANNING_DB_PASSWORD");
+            db = System.getenv("LC_JOURNEY_PLANNING_DB_NAME");
+            port = System.getenv("LC_JOURNEY_PLANNING_DB_PORT");
         } else {
             host = "localhost";
             user = "root";
-            password = "12345678";
+            password = "0112358";
             db = "gtfs";
             port = "3306";
         }
