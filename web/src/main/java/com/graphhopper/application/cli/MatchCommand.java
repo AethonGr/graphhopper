@@ -111,7 +111,7 @@ public class MatchCommand extends ConfiguredCommand<GraphHopperServerConfigurati
         mapMatching.setTransitionProbabilityBeta(args.getDouble("transition_probability_beta"));
         mapMatching.setMeasurementErrorSigma(args.getInt("gps_accuracy"));
 
-                StopWatch importSW = new StopWatch();
+        StopWatch importSW = new StopWatch();
         StopWatch matchSW = new StopWatch();
 
         Translation tr = new TranslationMap().doImport().getWithFallBack(Helper.getLocale(args.getString("instructions")));

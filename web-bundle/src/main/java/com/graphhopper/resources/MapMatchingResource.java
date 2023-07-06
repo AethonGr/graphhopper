@@ -90,6 +90,9 @@ public class MapMatchingResource {
             @QueryParam("points_encoded") @DefaultValue("true") boolean pointsEncoded,
             @QueryParam("locale") @DefaultValue("en") String localeStr,
             @QueryParam("profile") String profile,
+            @QueryParam("lats") List<Double> lats,
+            @QueryParam("lons") List<Double> lons,
+            @QueryParam("eles") List<Double> eles,
             @QueryParam(PATH_DETAILS) List<String> pathDetails,
             @QueryParam("gpx.route") @DefaultValue("true") boolean withRoute,
             @QueryParam("gpx.track") @DefaultValue("true") boolean withTrack,
@@ -97,11 +100,17 @@ public class MapMatchingResource {
             @QueryParam("gps_accuracy") @DefaultValue("40") double gpsAccuracy) {
 
         boolean writeGPX = "gpx".equalsIgnoreCase(outType);
-        if (gpx.trk.isEmpty()) {
-            throw new IllegalArgumentException("No tracks found in GPX document. Are you using waypoints or routes instead?");
-        }
-        if (gpx.trk.size() > 1) {
-            throw new IllegalArgumentException("GPX documents with multiple tracks not supported yet.");
+        boolean using_file;
+
+        using_file = lats.isEmpty() || lons.isEmpty() || eles.isEmpty();
+
+        if (using_file){
+            if (gpx.trk.isEmpty()) {
+                throw new IllegalArgumentException("No tracks found in GPX document. Are you using waypoints or routes instead?");
+            }
+            if (gpx.trk.size() > 1) {
+                throw new IllegalArgumentException("GPX documents with multiple tracks not supported yet.");
+            }
         }
 
         instructions = writeGPX || instructions;
@@ -123,7 +132,14 @@ public class MapMatchingResource {
         MapMatching matching = new MapMatching(graphHopper.getBaseGraph(), (LocationIndexTree) graphHopper.getLocationIndex(), mapMatchingRouterFactory.createMapMatchingRouter(hints));
         matching.setMeasurementErrorSigma(gpsAccuracy);
 
-        List<Observation> measurements = GpxConversions.getEntries(gpx.trk.get(0));
+        List<Observation> measurements;
+
+        if (using_file){
+            measurements = GpxConversions.getEntries(gpx.trk.get(0));
+        }else{
+            measurements = GpxConversions.getMeasurementsFromQuery(lats, lons, eles);
+        }
+
         MatchResult matchResult = matching.match(measurements);
 
         sw.stop();

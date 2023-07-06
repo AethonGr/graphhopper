@@ -224,6 +224,20 @@ public class GpxConversions {
         return gpxEntries;
     }
 
+    public static List<Observation> getMeasurementsFromQuery(List<Double> lats,
+                                                             List<Double> lons,
+                                                             List<Double> eles) {
+
+        ArrayList<Observation> gpsEntries = new ArrayList<>();
+
+        for (int i = 0; i < lats.size(); i++) {
+            gpsEntries.add(new Observation(new GHPoint3D(lats.get(i),
+                                                         lons.get(i),
+                                                         eles.get(i))));
+        }
+        return gpsEntries;
+    }
+
     public static List<Observation> getMeasurementsFromArgs(Namespace args) {
         ArrayList<Observation> gpsEntries = new ArrayList<>();
         String[] lats = args.getString("lats").split(",");
@@ -237,6 +251,7 @@ public class GpxConversions {
         }
         return gpsEntries;
     }
+
 
     /**
      * @author Peter Karich
