@@ -326,13 +326,7 @@ public abstract class Entity implements Serializable, Cloneable {
                 String S_company_id = String.valueOf(company_id);
                 DBConnection conn = new DBConnection();
                 String tableName_extended = tableName;
-                if (System.getenv("JOURNEY_PLANNING_DB_TABLE_EXTENSION") != null) {
-                    tableName_extended = tableName_extended.concat(System.getenv("JOURNEY_PLANNING_DB_TABLE_EXTENSION"));
-                } else {
-                    tableName_extended = tableName_extended.concat("_published");
-                }
-
-                ResultSet column_rs = conn.ExecuteQuery("SELECT * FROM " + tableName_extended + " LIMIT 1");
+                ResultSet column_rs = conn.ExecuteQuery("SELECT * FROM " + tableName + " LIMIT 1");
                 ResultSetMetaData rsmd = column_rs.getMetaData();
                 int columnCount = rsmd.getColumnCount();
 
