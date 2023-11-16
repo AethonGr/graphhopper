@@ -19,6 +19,7 @@ package com.graphhopper.routing.util.parsers;
 
 import com.graphhopper.reader.ReaderWay;
 import com.graphhopper.routing.ev.*;
+import com.graphhopper.routing.util.FerrySpeedCalculator;
 import com.graphhopper.routing.util.TransportationMode;
 import com.graphhopper.routing.util.WayAccess;
 import com.graphhopper.util.PMap;
@@ -30,9 +31,7 @@ import static com.graphhopper.routing.util.PriorityCode.UNCHANGED;
 
 public class FootAccessParser extends AbstractAccessParser implements TagParser {
 
-    final Set<String> safeHighwayTags = new HashSet<>();
     final Set<String> allowedHighwayTags = new HashSet<>();
-    final Set<String> avoidHighwayTags = new HashSet<>();
     final Set<String> allowedSacScale = new HashSet<>();
     protected HashSet<String> sidewalkValues = new HashSet<>(5);
     protected Map<RouteNetwork, Integer> routeMap = new HashMap<>();
@@ -58,27 +57,23 @@ public class FootAccessParser extends AbstractAccessParser implements TagParser 
 
         barriers.add("fence");
 
-        safeHighwayTags.add("footway");
-        safeHighwayTags.add("path");
-        safeHighwayTags.add("steps");
-        safeHighwayTags.add("pedestrian");
-        safeHighwayTags.add("living_street");
-        safeHighwayTags.add("track");
-        safeHighwayTags.add("residential");
-        safeHighwayTags.add("service");
-        safeHighwayTags.add("platform");
-
-        avoidHighwayTags.add("trunk");
-        avoidHighwayTags.add("trunk_link");
-        avoidHighwayTags.add("primary");
-        avoidHighwayTags.add("primary_link");
-        avoidHighwayTags.add("secondary");
-        avoidHighwayTags.add("secondary_link");
-        avoidHighwayTags.add("tertiary");
-        avoidHighwayTags.add("tertiary_link");
-
-        allowedHighwayTags.addAll(safeHighwayTags);
-        allowedHighwayTags.addAll(avoidHighwayTags);
+        allowedHighwayTags.add("footway");
+        allowedHighwayTags.add("path");
+        allowedHighwayTags.add("steps");
+        allowedHighwayTags.add("pedestrian");
+        allowedHighwayTags.add("living_street");
+        allowedHighwayTags.add("track");
+        allowedHighwayTags.add("residential");
+        allowedHighwayTags.add("service");
+        allowedHighwayTags.add("platform");
+        allowedHighwayTags.add("trunk");
+        allowedHighwayTags.add("trunk_link");
+        allowedHighwayTags.add("primary");
+        allowedHighwayTags.add("primary_link");
+        allowedHighwayTags.add("secondary");
+        allowedHighwayTags.add("secondary_link");
+        allowedHighwayTags.add("tertiary");
+        allowedHighwayTags.add("tertiary_link");
         allowedHighwayTags.add("cycleway");
         allowedHighwayTags.add("unclassified");
         allowedHighwayTags.add("road");
@@ -103,7 +98,7 @@ public class FootAccessParser extends AbstractAccessParser implements TagParser 
         if (highwayValue == null) {
             WayAccess acceptPotentially = WayAccess.CAN_SKIP;
 
-            if (way.hasTag("route", ferries)) {
+            if (FerrySpeedCalculator.isFerry(way)) {
                 String footTag = way.getTag("foot");
                 if (footTag == null || intendedValues.contains(footTag))
                     acceptPotentially = WayAccess.FERRY;

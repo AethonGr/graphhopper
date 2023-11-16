@@ -131,7 +131,7 @@ public class MapMatching {
 
             @Override
             public List<Path> calcPaths(QueryGraph queryGraph, int fromNode, int fromOutEdge, int[] toNodes, int[] toInEdges) {
-                assert(toNodes.length == toInEdges.length);
+                assert (toNodes.length == toInEdges.length);
                 List<Path> result = new ArrayList<>();
                 for (int i = 0; i < toNodes.length; i++) {
                     result.add(calcOnePath(queryGraph, fromNode, toNodes[i], fromOutEdge, toInEdges[i]));
@@ -380,6 +380,10 @@ public class MapMatching {
     }
 
     private List<SequenceState<State, Observation, Path>> computeViterbiSequence(List<ObservationWithCandidateStates> timeSteps) {
+        if (timeSteps.isEmpty()) {
+            return Collections.emptyList();
+        }
+
         final HmmProbabilities probabilities = new HmmProbabilities(measurementErrorSigma, transitionProbabilityBeta);
         final Map<State, Label> labels = new HashMap<>();
         Map<Transition<State>, Path> roadPaths = new HashMap<>();
