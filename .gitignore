@@ -65,24 +65,24 @@ web/src/main/java/com/graphhopper/http/resources/buildb/string_index_keys
 web/src/main/java/com/graphhopper/http/resources/buildb/string_index_vals
 web/src/main/java/com/graphhopper/http/resources/buildb/transit_schedule
 web/src/main/java/com/graphhopper/http/resources/buildb/transit_schedule.p
-/assets/graph/edgekv_keys
-/assets/graph/edgekv_vals
-/assets/graph/edges
-/assets/graph/geometry
-/assets/graph/gtfs_48
-/assets/graph/gtfs_48.p
-/assets/graph/gtfs_ 49
-/assets/graph/gtfs_ 49.p
-/assets/graph/location_index
-/assets/graph/nodes
-/assets/graph/properties
-/assets/graph/pt_edge_attrs
-/assets/graph/pt_edges
-/assets/graph/pt_extra
-/assets/graph/pt_nodes
-/assets/graph/pt_to_street
-/assets/graph/skipped_edges_for_transfer
-/assets/graph/stop_index
-/assets/graph/street_to_pt
-/assets/graph/transit_schedule
-/assets/graph/transit_schedule.p
+/assets/graph11/edgekv_keys
+/assets/graph11/edgekv_vals
+/assets/graph11/edges
+/assets/graph11/geometry
+/assets/graph11/gtfs_48
+/assets/graph11/gtfs_48.p
+/assets/graph11/gtfs_ 49
+/assets/graph11/gtfs_ 49.p
+/assets/graph11/location_index
+/assets/graph11/nodes
+/assets/graph11/properties
+/assets/graph11/pt_edge_attrs
+/assets/graph11/pt_edges
+/assets/graph11/pt_extra
+/assets/graph11/pt_nodes
+/assets/graph11/pt_to_street
+/assets/graph11/skipped_edges_for_transfer
+/assets/graph11/stop_index
+/assets/graph11/street_to_pt
+/assets/graph11/transit_schedule
+/assets/graph11/transit_schedule.p
