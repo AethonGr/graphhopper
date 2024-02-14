@@ -18,6 +18,7 @@
 
 package com.graphhopper.gtfs;
 
+import com.conveyal.gtfs.model.DBConnection;
 import com.conveyal.gtfs.model.Transfer;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.GraphHopperConfig;
@@ -35,10 +36,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GraphHopperGtfs extends GraphHopper {
 
@@ -76,6 +80,15 @@ public class GraphHopperGtfs extends GraphHopper {
             InMemConstructionIndex indexBuilder = new InMemConstructionIndex(IndexStructureInfo.create(
                     new BBox(-180.0, 180.0, -90.0, 90.0), 300));
             try {
+                if (ghConfig.getBool("load.from.db.validated",false)) {
+
+                    String[] company_array = get_validated_companies();
+                    for (String company_id : company_array) {
+                        getGtfsStorage().loadGtfsFromDB("gtfs_" + company_id, company_id);
+
+                    }
+                }
+
                 if (ghConfig.getBool("load.from.db",false)) {
                     if (ghConfig.has("company.id")) {
                         String companies = ghConfig.getString("company.id", "");
@@ -127,6 +140,36 @@ public class GraphHopperGtfs extends GraphHopper {
         }
         gtfsStorage.setStopIndex(stopIndex);
         gtfsStorage.setPtGraph(ptGraph);
+    }
+
+    private String[] get_validated_companies() throws SQLException {
+
+        DBConnection conn_user_data = new DBConnection("user_data");
+        ResultSet company_id_with_tokens_rs = conn_user_data.ExecuteQuery("SELECT company_id FROM user_data.api_tokens as tokens where tokens.api_name = 'get_directions' AND tokens.revoked = 0;");
+
+        DBConnection conn_working_data = new DBConnection("working_data");
+        ResultSet company_id_with_gtfs_rs = conn_working_data.ExecuteQuery("SELECT company_id FROM working_data.info as info where info.validated = 1 AND info.published = 1;");
+
+        List<String> company_id_with_tokens = new ArrayList<>();
+        List<String> company_id_with_gtfs = new ArrayList<>();
+
+        // Fetch each row from the result set
+        while (company_id_with_tokens_rs.next()) {
+            String company_id = company_id_with_tokens_rs.getString("company_id");
+            company_id_with_tokens.add(company_id);
+        }
+
+        while (company_id_with_gtfs_rs.next()) {
+            String company_id = company_id_with_gtfs_rs.getString("company_id");
+            company_id_with_gtfs.add(company_id);
+        }
+
+        Set<String> company_ids = company_id_with_tokens.stream().distinct().filter(company_id_with_gtfs::contains).collect(Collectors.toSet());
+
+        String[] company_ids_array = company_ids.toArray(new String[0]);
+
+        return company_ids_array;
+
     }
 
     private void interpolateTransfers(HashMap<String, GtfsReader> readers, Map<String, Transfers> allTransfers) {

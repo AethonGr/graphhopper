@@ -320,12 +320,11 @@ public abstract class Entity implements Serializable, Cloneable {
             }
         }
 
-        public void loadTable(String company_id) throws IOException {
+        public void loadTable(String company_id) {
             LOG.info("Loading GTFS table {} from database", tableName);
             try {
                 String S_company_id = String.valueOf(company_id);
-                DBConnection conn = new DBConnection();
-                String tableName_extended = tableName;
+                DBConnection conn = new DBConnection(System.getenv("LC_JOURNEY_PLANNING_DB_NAME"));
                 ResultSet column_rs = conn.ExecuteQuery("SELECT * FROM " + tableName + " LIMIT 1");
                 ResultSetMetaData rsmd = column_rs.getMetaData();
                 int columnCount = rsmd.getColumnCount();
@@ -339,12 +338,11 @@ public abstract class Entity implements Serializable, Cloneable {
                 }
 
                 String query;
-                query = "SELECT " + columns + " AS " + columns + " FROM " + tableName_extended + "  WHERE company_id = " + S_company_id + ";";
+                query = "SELECT " + columns + " AS " + columns + " FROM " + tableName + "  WHERE company_id = " + S_company_id + ";";
 
                 this.resultSet = conn.ExecuteQuery(query);
 
                 while (resultSet.next()) {
-                    // reader.getCurrentRecord() is zero-based and does not include the header line, keep our own row count
                     if (++row % 500000 == 0) {
                         LOG.info("Record number {}", human(row));
                     }

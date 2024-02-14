@@ -12,24 +12,19 @@ public class DBConnection {
     private Connection conn;
     private static final Logger LOG = LoggerFactory.getLogger(GTFSFeed.class);
 
-    public DBConnection() throws  SQLException {
+    public DBConnection(String db) throws  SQLException {
         String host = null;
         String user = null;
         String password = null;
-        String db = null;
-        String port = null;
+
         if (System.getenv("LC_JOURNEY_PLANNING_DB_HOST") != null || System.getenv("LC_JOURNEY_PLANNING_DB_USER") != null || System.getenv("LC_JOURNEY_PLANNING_DB_PASSWORD") != null) {
             host = System.getenv("LC_JOURNEY_PLANNING_DB_HOST");
             user = System.getenv("LC_JOURNEY_PLANNING_DB_USER");
             password = System.getenv("LC_JOURNEY_PLANNING_DB_PASSWORD");
-            db = System.getenv("LC_JOURNEY_PLANNING_DB_NAME");
-            port = System.getenv("LC_JOURNEY_PLANNING_DB_PORT");
         } else {
             host = "localhost";
             user = "root";
             password = "0112358";
-            db = "gtfs";
-            port = "3306";
         }
 
         String connection_url = "jdbc:mysql://" + host + ":3306/" + db;

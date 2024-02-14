@@ -1,8 +1,9 @@
 graphhopper:
   datareader.file: C:\Users\aetho\Documents\Transitool\graphhopper\assets\map.osm
   graph.location: C:\Users\aetho\Documents\Transitool\graphhopper\assets\graph
-  company.id: "49"
+  company.id: "51, 52"
   load.from.db: true
+  load.from.db.validated: true
   import.osm.ignored_highways: cycleway,pedestrian,motorway,trunk
   prepare.min_network_size: 200
   profiles:
