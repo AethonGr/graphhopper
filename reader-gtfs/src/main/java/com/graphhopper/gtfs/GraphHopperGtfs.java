@@ -89,7 +89,7 @@ public class GraphHopperGtfs extends GraphHopper {
                     }
                 }
 
-                if (ghConfig.getBool("load.from.db",false)) {
+                else if (ghConfig.getBool("load.from.db",false)) {
                     if (ghConfig.has("company.id")) {
                         String companies = ghConfig.getString("company.id", "");
                         String[] company_array = companies.split(",", -1);
