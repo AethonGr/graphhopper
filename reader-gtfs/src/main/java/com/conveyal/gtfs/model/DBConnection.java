@@ -17,10 +17,10 @@ public class DBConnection {
         String user = null;
         String password = null;
 
-        if (System.getenv("LC_JOURNEY_PLANNING_DB_HOST") != null || System.getenv("LC_JOURNEY_PLANNING_DB_USER") != null || System.getenv("LC_JOURNEY_PLANNING_DB_PASSWORD") != null) {
-            host = System.getenv("LC_JOURNEY_PLANNING_DB_HOST");
-            user = System.getenv("LC_JOURNEY_PLANNING_DB_USER");
-            password = System.getenv("LC_JOURNEY_PLANNING_DB_PASSWORD");
+        if (System.getenv("DATABASE_HOST") != null || System.getenv("DATABASE_USER") != null || System.getenv("DATABASE_PASSWORD") != null) {
+            host = System.getenv("DATABASE_HOST");
+            user = System.getenv("DATABASE_USER");
+            password = System.getenv("DATABASE_PASSWORD");
         } else {
             host = "localhost";
             user = "root";

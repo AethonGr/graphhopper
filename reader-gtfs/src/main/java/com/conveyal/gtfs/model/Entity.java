@@ -324,7 +324,7 @@ public abstract class Entity implements Serializable, Cloneable {
             LOG.info("Loading GTFS table {} from database", tableName);
             try {
                 String S_company_id = String.valueOf(company_id);
-                DBConnection conn = new DBConnection(System.getenv("LC_JOURNEY_PLANNING_DB_NAME"));
+                DBConnection conn = new DBConnection("operational_data");
                 ResultSet column_rs = conn.ExecuteQuery("SELECT * FROM " + tableName + " LIMIT 1");
                 ResultSetMetaData rsmd = column_rs.getMetaData();
                 int columnCount = rsmd.getColumnCount();
