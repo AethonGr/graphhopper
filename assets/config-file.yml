@@ -1,8 +1,9 @@
 graphhopper:
   datareader.file: C:\Users\aetho\Documents\Transitool\graphhopper\assets\athens.osm
   graph.location: C:\Users\aetho\Documents\Transitool\graphhopper\assets\graph
-  load.from.db: true
-  load.from.db.validated: true
+  load.from.db: False
+  load.from.db.validated: False
+  gtfs.file: C:\Users\aetho\Documents\Transitool\graphhopper\assets\oasa_new_all.zip,C:\Users\aetho\Documents\Transitool\graphhopper\assets\GTFS Iraklio 06.10.2021.zip,C:\Users\aetho\Documents\Transitool\graphhopper\assets\piraeus GTFS 02.02.2024.zip
   import.osm.ignored_highways: cycleway,pedestrian,motorway,trunk
   prepare.min_network_size: 200
   profiles:

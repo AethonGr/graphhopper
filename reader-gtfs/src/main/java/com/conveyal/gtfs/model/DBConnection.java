@@ -40,7 +40,22 @@ public class DBConnection {
             LOG.error("Exception while connecting to database! Exception : " + e);
         }
 
-}
+    }
+
+    // Helper method to retrieve a single page of data
+    public ResultSet getPaginatedData(int page, int pageSize, String query) throws SQLException {
+
+        Connection connection = this.getConn();
+        PreparedStatement preparedStatement = connection.prepareStatement(query);
+
+        int offset = (page - 1) * pageSize;
+        preparedStatement.setInt(1, pageSize);
+        preparedStatement.setInt(2, offset);
+
+        return preparedStatement.executeQuery();
+
+    }
+
     public Connection getConn() {
         return conn;
     }

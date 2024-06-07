@@ -324,8 +324,8 @@ public abstract class Entity implements Serializable, Cloneable {
             LOG.info("Loading GTFS table {} from database", tableName);
             try {
                 String S_company_id = String.valueOf(company_id);
-                DBConnection conn = new DBConnection("operational_data");
-                ResultSet column_rs = conn.ExecuteQuery("SELECT * FROM " + tableName + " LIMIT 1");
+                DBConnection column_conn = new DBConnection("operational_data");
+                ResultSet column_rs = column_conn.ExecuteQuery("SELECT * FROM " + tableName + " LIMIT 1");
                 ResultSetMetaData rsmd = column_rs.getMetaData();
                 int columnCount = rsmd.getColumnCount();
 
@@ -338,17 +338,33 @@ public abstract class Entity implements Serializable, Cloneable {
                 }
 
                 String query;
-                query = "SELECT " + columns + " AS " + columns + " FROM " + tableName + "  WHERE company_id = " + S_company_id + ";";
 
-                this.resultSet = conn.ExecuteQuery(query);
+                int page = 1;
+                boolean hasMoreData = true;
 
-                while (resultSet.next()) {
-                    if (++row % 500000 == 0) {
-                        LOG.info("Record number {}", human(row));
+                while (hasMoreData) {
+
+                    DBConnection conn = new DBConnection("operational_data");
+
+                    hasMoreData = false;
+                    query = "SELECT " + columns + " AS " + columns + " FROM " + tableName + "  WHERE company_id = " + S_company_id + " LIMIT ? OFFSET ?;";
+
+                    this.resultSet = conn.getPaginatedData(page,500000, query);
+
+                    while (resultSet.next()) {
+                        if (++row % 500000 == 0) {
+                            LOG.info("Record number {}", human(row));
+                        }
+                        hasMoreData = true;
+                        loadOneRow(); // Call subclass method to produce an entity from the current row.
                     }
-                    loadOneRow(); // Call subclass method to produce an entity from the current row.
+                    page++;
+                    conn.getConn().commit();
+                    conn.getConn().close();
+
+
                 }
-                conn.getConn().close();
+
             } catch (SQLException ex) {
                 // handle any errors
                 LOG.error("SQLException: " + ex.getMessage());
