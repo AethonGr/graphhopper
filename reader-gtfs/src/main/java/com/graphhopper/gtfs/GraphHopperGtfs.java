@@ -145,7 +145,7 @@ public class GraphHopperGtfs extends GraphHopper {
     private String[] get_validated_companies() throws SQLException {
 
         DBConnection conn_user_data = new DBConnection("user_data");
-        ResultSet company_id_with_tokens_rs = conn_user_data.ExecuteQuery("SELECT tokens.company_id FROM user_data.api_tokens as tokens where tokens.api_name = 'get_directions' AND tokens.revoked = 0 UNION SELECT company_id FROM working_data.info as info where info.share_gtfs='1';");
+        ResultSet company_id_with_tokens_rs = conn_user_data.ExecuteQuery("SELECT tokens.company_id FROM user_data.api_tokens as tokens where tokens.api_name = 'get_directions' AND tokens.revoked = 0 UNION SELECT company_id FROM working_data.info as info where info.share_gtfs='1' and info.is_airline=0;");
 
         DBConnection conn_working_data = new DBConnection("working_data");
         ResultSet company_id_with_gtfs_rs = conn_working_data.ExecuteQuery("SELECT company_id FROM working_data.info as info where info.validated = 1 AND info.published = 1;");
