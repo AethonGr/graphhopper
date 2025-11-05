@@ -28,6 +28,9 @@ public class DBConnection {
         }
 
         String connection_url = "jdbc:mysql://" + host + ":3306/" + db;
+        if (host != null && (host.contains("digitalocean.com") || host.contains("amazonaws.com") || host.contains("rds."))) {
+            connection_url += "?sslMode=REQUIRED";
+        }
 
         LOG.info(connection_url);
 
