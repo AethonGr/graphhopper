@@ -41,6 +41,7 @@ public class DBConnection {
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
             this.conn = DriverManager.getConnection(connection_url, user, password);
+            this.conn.setAutoCommit(false);
 
         } catch (ClassNotFoundException | SQLException e){
 
