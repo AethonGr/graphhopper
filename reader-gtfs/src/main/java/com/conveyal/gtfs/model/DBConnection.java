@@ -16,33 +16,34 @@ public class DBConnection {
         String host = null;
         String user = null;
         String password = null;
+        String port = null;
+
 
         if (System.getenv("DATABASE_HOST") != null || System.getenv("DATABASE_USER") != null || System.getenv("DATABASE_PASSWORD") != null) {
             host = System.getenv("DATABASE_HOST");
             user = System.getenv("DATABASE_USER");
             password = System.getenv("DATABASE_PASSWORD");
+            port = System.getenv("DATABASE_PORT");
         } else {
             host = "localhost";
             user = "root";
             password = "0112358";
+            port = "3306";
         }
 
-        String connection_url = "jdbc:mysql://" + host + ":3306/" + db;
+        String connection_url = "jdbc:mysql://" + host + ":" + port + "/" + this.db;
         if (host != null && (host.contains("digitalocean.com") || host.contains("amazonaws.com") || host.contains("rds."))) {
             connection_url += "?sslMode=REQUIRED";
         }
 
-        LOG.info(connection_url);
-
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
-            this.conn = DriverManager.getConnection(connection_url, user, password);
+            return DriverManager.getConnection(connection_url, user, password);
 
         } catch (ClassNotFoundException | SQLException e){
 
-            LOG.error("Exception while connecting to database! Exception : " + e);
+            throw new SQLException("Exception while connecting to database! Exception : " + e);
         }
-
     }
 
     // Helper method to retrieve a single page of data
