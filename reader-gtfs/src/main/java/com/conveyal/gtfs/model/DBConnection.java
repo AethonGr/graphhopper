@@ -31,21 +31,23 @@ public class DBConnection {
             port = "3306";
         }
 
-        String connection_url = "jdbc:mysql://" + host + ":" + port + "/" + this.db;
+        String connection_url = "jdbc:mysql://" + host + ":" + port + "/" + db;
         if (host != null && (host.contains("digitalocean.com") || host.contains("amazonaws.com") || host.contains("rds."))) {
             connection_url += "?sslMode=REQUIRED";
         }
 
+        LOG.info(connection_url);
+
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
-            return DriverManager.getConnection(connection_url, user, password);
+            this.conn = DriverManager.getConnection(connection_url, user, password);
 
         } catch (ClassNotFoundException | SQLException e){
 
-            throw new SQLException("Exception while connecting to database! Exception : " + e);
+            LOG.error("Exception while connecting to database! Exception : " + e);
         }
-    }
 
+    }
     // Helper method to retrieve a single page of data
     public ResultSet getPaginatedData(int page, int pageSize, String query) throws SQLException {
 
