@@ -143,33 +143,27 @@ public class GraphHopperGtfs extends GraphHopper {
     }
 
     private String[] get_validated_companies() throws SQLException {
-
-        DBConnection conn_user_data = new DBConnection("user_data");
-        ResultSet company_id_with_tokens_rs = conn_user_data.ExecuteQuery("SELECT tokens.company_id FROM user_data.api_tokens as tokens where tokens.api_name = 'get_directions' AND tokens.revoked = 0 UNION SELECT company_id FROM working_data.info as info where info.share_gtfs='1' and info.is_airline=0;");
-
-        DBConnection conn_working_data = new DBConnection("working_data");
-        ResultSet company_id_with_gtfs_rs = conn_working_data.ExecuteQuery("SELECT company_id FROM working_data.info as info where info.validated = 1 AND info.published = 1;");
-
-        List<String> company_id_with_tokens = new ArrayList<>();
-        List<String> company_id_with_gtfs = new ArrayList<>();
-
-        // Fetch each row from the result set
-        while (company_id_with_tokens_rs.next()) {
-            String company_id = company_id_with_tokens_rs.getString("company_id");
-            company_id_with_tokens.add(company_id);
+        DBConnection db = new DBConnection("user_data");
+        String sql = "SELECT DISTINCT info.company_id " +
+                "FROM working_data.info AS info " +
+                "JOIN user_data.api_tokens AS t ON info.company_id = t.company_id " +
+                "WHERE t.api_name = 'get_directions' " +
+                "AND t.revoked = 0 " +
+                "AND t.published = 1 " +
+                "AND info.share_gtfs = 1 " +
+                "AND info.validated = 1 " +
+                "AND info.published = 1 " +
+                "AND NOT EXISTS (" +
+                "    SELECT 1 " +
+                "    FROM working_data.routes r " +
+                "    WHERE r.company_id = info.company_id AND r.route_type = 1100" +
+                ")";
+        ResultSet rs = db.ExecuteQuery(sql);
+        List<String> company_ids = new ArrayList<>();
+        while (rs.next()) {
+            company_ids.add(rs.getString("company_id"));
         }
-
-        while (company_id_with_gtfs_rs.next()) {
-            String company_id = company_id_with_gtfs_rs.getString("company_id");
-            company_id_with_gtfs.add(company_id);
-        }
-
-        Set<String> company_ids = company_id_with_tokens.stream().distinct().filter(company_id_with_gtfs::contains).collect(Collectors.toSet());
-
-        String[] company_ids_array = company_ids.toArray(new String[0]);
-
-        return company_ids_array;
-
+        return company_ids.toArray(new String[0]);
     }
 
     private void interpolateTransfers(HashMap<String, GtfsReader> readers, Map<String, Transfers> allTransfers) {
