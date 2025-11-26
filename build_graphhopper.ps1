@@ -50,3 +50,4 @@ Write-Host "1. Rebuild the Docker image for journey_planning_interface_dev" -For
 Write-Host "2. Redeploy to DigitalOcean" -ForegroundColor White
 Write-Host ""
 
+

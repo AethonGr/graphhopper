@@ -47,3 +47,4 @@ echo "1. Rebuild the Docker image for journey_planning_interface_dev"
 echo "2. Redeploy to DigitalOcean"
 echo ""
 
+
