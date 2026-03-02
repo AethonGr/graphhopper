@@ -155,7 +155,12 @@ public abstract class Entity implements Serializable, Cloneable {
             if (str == null) {
                 val = defaultValue; // defaults to 0 per overloaded function, unless provided.
             } else try {
-                val = Integer.parseInt(str);
+                // Handle float strings from database (e.g. "11.0" instead of "11")
+                if (str.contains(".")) {
+                    val = (int) Double.parseDouble(str);
+                } else {
+                    val = Integer.parseInt(str);
+                }
                 if (mapping != null) {
                     Integer mappedVal = mapping.get(val);
                     if (mappedVal != null)

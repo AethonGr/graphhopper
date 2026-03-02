@@ -43,6 +43,9 @@ public class Route extends Entity { // implements Entity.Factory<Route>
     public static final Map<Integer, Integer> EXTENTED_ROUTE_TYPE_MAPPING = new HashMap<>();
     
     static {
+        // Standard GTFS extended route types (11, 12 added in newer GTFS spec)
+        EXTENTED_ROUTE_TYPE_MAPPING.put(11, 3);   // Trolleybus → Bus
+        EXTENTED_ROUTE_TYPE_MAPPING.put(12, 0);   // Monorail → Tram/Light Rail
         EXTENTED_ROUTE_TYPE_MAPPING.put(100, 2);
         EXTENTED_ROUTE_TYPE_MAPPING.put(101, 2);
         EXTENTED_ROUTE_TYPE_MAPPING.put(102, 2);
