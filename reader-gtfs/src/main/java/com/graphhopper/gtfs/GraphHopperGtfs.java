@@ -159,11 +159,118 @@ public class GraphHopperGtfs extends GraphHopper {
                 "    WHERE r.company_id = info.company_id AND r.route_type = 1100" +
                 ")";
         ResultSet rs = db.ExecuteQuery(sql);
-        List<String> company_ids = new ArrayList<>();
+        List<String> candidate_ids = new ArrayList<>();
         while (rs.next()) {
-            company_ids.add(rs.getString("company_id"));
+            candidate_ids.add(rs.getString("company_id"));
         }
-        return company_ids.toArray(new String[0]);
+        rs.close();
+
+        // Freshness guard.
+        // A company can be flagged validated=1/published=1 in working_data.info while the GTFS
+        // snapshot actually served from operational_data has long since expired: operational_data
+        // is only ever (re)written by an explicit publish, and is keyed by company_id alone - there
+        // is no feed version or effective-date concept, so the info flags say nothing about whether
+        // the loaded calendars still cover today. Without this guard an expired feed is loaded
+        // silently and the planner answers "no public transport" for current dates while /info still
+        // reports a fresh import_date (which is only the graph *build* date). Below we log every
+        // feed's calendar window and drop feeds with no service on or after today.
+        boolean skipExpired = ghConfig.getBool("gtfs.skip_expired_feeds", true);
+
+        List<String> kept_ids = new ArrayList<>();
+        for (String company_id : candidate_ids) {
+            boolean current;
+            try {
+                current = logAndCheckFeedFreshness(db, company_id);
+            } catch (Exception e) {
+                // Fail open: a probe error (bad id, missing grant, transient DB issue) must never
+                // be able to blank the transit graph, so keep the feed and surface the problem.
+                LOGGER.warn("Could not evaluate GTFS freshness for company {} ({}). Keeping it.", company_id, e.toString());
+                kept_ids.add(company_id);
+                continue;
+            }
+            if (current || !skipExpired) {
+                kept_ids.add(company_id);
+            } else {
+                LOGGER.error("EXPIRED GTFS: company {} has no operational_data service on or after today - " +
+                        "excluding it from the transit graph. Re-import/validate/publish a current feed.", company_id);
+            }
+        }
+
+        // Safety net: never let the guard itself produce an empty feed set. That would both hide the
+        // problem and crash GtfsStorage.postInit (it calls max()/min() over the loaded feeds). If every
+        // candidate looks expired there is nothing fresh to fall back to, so keep them all and shout -
+        // serving stale data beats taking the whole journey planner down.
+        if (kept_ids.isEmpty() && !candidate_ids.isEmpty()) {
+            LOGGER.error("ALL {} candidate GTFS feeds appear expired/empty in operational_data. Keeping them " +
+                    "to avoid an empty transit graph - TRANSIT DATA IS STALE and must be re-published.", candidate_ids.size());
+            closeQuietly(db);
+            return candidate_ids.toArray(new String[0]);
+        }
+
+        LOGGER.info("GTFS freshness guard: kept {} of {} validated companies for the transit graph: {}",
+                kept_ids.size(), candidate_ids.size(), kept_ids);
+        closeQuietly(db);
+        return kept_ids.toArray(new String[0]);
+    }
+
+    /**
+     * Logs the operational_data calendar window for a company and returns whether the feed still has
+     * service on or after today. A feed is considered "current" if it has either a calendar row whose
+     * end_date is today or later, or a future calendar_dates "added service" (exception_type = 1) row
+     * (covering feeds that rely on calendar_dates only). The day-of-week "active today" figure is a
+     * best-effort signal that ignores calendar_dates exceptions; it only enriches the log line and does
+     * not influence the keep/drop decision.
+     */
+    private boolean logAndCheckFeedFreshness(DBConnection db, String company_id) throws SQLException {
+        // company_id originates from an int column in working_data.info; validate before inlining it.
+        long cid = Long.parseLong(company_id.trim());
+
+        String probe =
+                "SELECT " +
+                "  (SELECT COUNT(*)        FROM operational_data.calendar       WHERE company_id = " + cid + ") AS n_cal, " +
+                "  (SELECT MIN(start_date) FROM operational_data.calendar       WHERE company_id = " + cid + ") AS min_start, " +
+                "  (SELECT MAX(end_date)   FROM operational_data.calendar       WHERE company_id = " + cid + ") AS max_end, " +
+                "  (SELECT COUNT(*)        FROM operational_data.calendar       WHERE company_id = " + cid + " AND end_date >= CURDATE()) AS n_cal_current, " +
+                "  (SELECT COUNT(*)        FROM operational_data.calendar_dates WHERE company_id = " + cid + " AND exception_type = '1' AND date >= CURDATE()) AS n_cd_future, " +
+                "  (SELECT COUNT(*)        FROM operational_data.calendar       WHERE company_id = " + cid +
+                "        AND start_date <= CURDATE() AND end_date >= CURDATE() " +
+                "        AND CASE DAYOFWEEK(CURDATE()) " +
+                "              WHEN 1 THEN sunday WHEN 2 THEN monday WHEN 3 THEN tuesday WHEN 4 THEN wednesday " +
+                "              WHEN 5 THEN thursday WHEN 6 THEN friday WHEN 7 THEN saturday END = '1') AS n_active_today";
+
+        ResultSet rs = db.ExecuteQuery(probe);
+        boolean current = false;
+        if (rs.next()) {
+            long nCal         = rs.getLong("n_cal");
+            String minStart   = rs.getString("min_start");
+            String maxEnd     = rs.getString("max_end");
+            long nCalCurrent  = rs.getLong("n_cal_current");
+            long nCdFuture    = rs.getLong("n_cd_future");
+            long nActiveToday = rs.getLong("n_active_today");
+
+            current = (nCalCurrent > 0) || (nCdFuture > 0);
+
+            if (nCal == 0 && nCdFuture == 0) {
+                LOGGER.warn("GTFS feed for company {}: operational_data.calendar is EMPTY (no services). Treated as expired.", company_id);
+            } else {
+                LOGGER.info("GTFS feed for company {}: calendar window {}..{}, {} services ({} valid today-or-later), " +
+                        "{} future calendar_dates adds, {} services active today (approx). current={}",
+                        company_id, minStart, maxEnd, nCal, nCalCurrent, nCdFuture, nActiveToday, current);
+                if (current && nActiveToday == 0) {
+                    LOGGER.warn("GTFS feed for company {} is not expired but has NO service active today - " +
+                            "possible sparse/holiday calendar or a service window that only starts in the future.", company_id);
+                }
+            }
+        }
+        rs.close();
+        return current;
+    }
+
+    private static void closeQuietly(DBConnection db) {
+        try {
+            if (db != null && db.getConn() != null) db.getConn().close();
+        } catch (SQLException ignored) {
+        }
     }
 
     private void interpolateTransfers(HashMap<String, GtfsReader> readers, Map<String, Transfers> allTransfers) {
