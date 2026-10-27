@@ -137,6 +137,11 @@ public final class PtRouterImpl implements PtRouter {
         private QueryGraph queryGraph;
         private int visitedNodes;
         private MultiCriteriaLabelSetting router;
+        // pt.max_query_seconds: a long trip across a big network can search for longer than the caller waits; past
+        // the limit the search stops and answers with the journeys found so far (0 = no limit)
+        private final int maxQuerySeconds;
+        private final long deadlineNanos;
+        private boolean timeLimitReached;
 
         private final Profile accessProfile;
         private final EdgeFilter accessSnapFilter;
@@ -148,6 +153,8 @@ public final class PtRouterImpl implements PtRouter {
         private final Weighting egressWeighting;
 
         RequestHandler(Request request) {
+            maxQuerySeconds = config.getInt("pt.max_query_seconds", 0);
+            deadlineNanos = System.nanoTime() + maxQuerySeconds * 1_000_000_000L;
             maxVisitedNodesForRequest = request.getMaxVisitedNodes();
             profileQuery = request.isProfileQuery();
             ignoreTransfers = Optional.ofNullable(request.getIgnoreTransfers()).orElse(request.isProfileQuery());
@@ -261,6 +268,10 @@ public final class PtRouterImpl implements PtRouter {
                 if (visitedNodes >= maxVisitedNodesForRequest) {
                     break;
                 }
+                if (maxQuerySeconds > 0 && (visitedNodes & 1023) == 0 && System.nanoTime() > deadlineNanos) {
+                    timeLimitReached = true;
+                    break;
+                }
                 // For single-criterion or pareto queries, we run to the end.
                 //
                 // For profile queries, we need a limited time window. Limiting the number of solutions is not
@@ -352,8 +363,14 @@ public final class PtRouterImpl implements PtRouter {
             }
             response.getHints().putObject("visited_nodes.sum", visitedNodes);
             response.getHints().putObject("visited_nodes.average", visitedNodes);
+            if (timeLimitReached) {
+                response.addDebugInfo("time limit of " + maxQuerySeconds + " s reached");
+                response.getHints().putObject("time_limit_reached", true);
+            }
             if (discoveredSolutions.isEmpty()) {
-                response.addError(new ConnectionNotFoundException("No route found", Collections.emptyMap()));
+                response.addError(new ConnectionNotFoundException(timeLimitReached
+                        ? "No route found within the time limit of " + maxQuerySeconds + " s"
+                        : "No route found", Collections.emptyMap()));
             }
             return paths;
         }
