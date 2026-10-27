@@ -164,6 +164,7 @@ public class GraphHopperGtfs extends GraphHopper {
             candidate_ids.add(rs.getString("company_id"));
         }
         rs.close();
+        candidate_ids = withinSizeLimit(db, candidate_ids);
 
         // Freshness guard.
         // A company can be flagged validated=1/published=1 in working_data.info while the GTFS
@@ -211,6 +212,34 @@ public class GraphHopperGtfs extends GraphHopper {
                 kept_ids.size(), candidate_ids.size(), kept_ids);
         closeQuietly(db);
         return kept_ids.toArray(new String[0]);
+    }
+
+    /**
+     * Drops the companies whose published timetable has more stop times than MAX_STOP_TIMES (environment variable,
+     * default 1,000,000; 0 = no limit), so that one big network cannot exhaust the heap of a small host and take
+     * journey planning down for every company. journey-planner/map_bbox.py applies the same limit.
+     */
+    private static List<String> withinSizeLimit(DBConnection db, List<String> companyIds) throws SQLException {
+        String configured = System.getenv("MAX_STOP_TIMES");
+        long maxStopTimes = configured == null || configured.isBlank() ? 1_000_000L : Long.parseLong(configured.trim());
+        if (maxStopTimes <= 0) {
+            return companyIds;
+        }
+        List<String> kept = new ArrayList<>();
+        for (String company_id : companyIds) {
+            long cid = Long.parseLong(company_id.trim());
+            ResultSet rs = db.ExecuteQuery("SELECT COUNT(*) AS n FROM operational_data.stop_times WHERE company_id = " + cid);
+            long stopTimes = rs.next() ? rs.getLong("n") : 0;
+            rs.close();
+            if (stopTimes > maxStopTimes) {
+                LOGGER.warn("TOO BIG: company {} has {} published stop times, more than MAX_STOP_TIMES={} - excluding it " +
+                        "from the transit graph (raise MAX_STOP_TIMES together with the heap to include it).",
+                        company_id, stopTimes, maxStopTimes);
+            } else {
+                kept.add(company_id);
+            }
+        }
+        return kept;
     }
 
     /**
