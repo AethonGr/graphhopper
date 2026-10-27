@@ -148,6 +148,7 @@ public class GtfsStorage {
 	private Map<String, GTFSFeed> gtfsFeeds = new HashMap<>();
 	private Map<String, Map<String, Fare>> faresByFeed;
 	private Map<FeedIdWithStopId, Integer> stationNodes;
+	private Map<String, String[]> tripCopies;
 	private IntObjectHashMap<int[]> skippedEdgesForTransfer;
 
 	private IntIntHashMap ptToStreet;
@@ -233,6 +234,7 @@ public class GtfsStorage {
     private void init() {
 		this.gtfsFeedIds = data.getHashSet("gtfsFeeds");
 		this.stationNodes = data.getHashMap("stationNodes");
+		this.tripCopies = data.exists("tripCopies") || !data.getEngine().isReadOnly() ? data.getHashMap("tripCopies") : Collections.emptyMap();
 		this.ptToStreet = new IntIntHashMap();
 		this.streetToPt = new IntIntHashMap();
 		this.skippedEdgesForTransfer = new IntObjectHashMap<>();
@@ -296,6 +298,14 @@ public class GtfsStorage {
 
 	public Map<String, GTFSFeed> getGtfsFeeds() {
 		return Collections.unmodifiableMap(gtfsFeeds);
+	}
+
+	/**
+	 * For every trip that stands for identical trips of other services (gtfs.merge_identical_trips), the ids of all of
+	 * them, its own included. Keyed by feed_id + ":" + trip_id.
+	 */
+	public Map<String, String[]> getTripCopies() {
+		return tripCopies;
 	}
 
 	public Map<FeedIdWithStopId, Integer> getStationNodes() {

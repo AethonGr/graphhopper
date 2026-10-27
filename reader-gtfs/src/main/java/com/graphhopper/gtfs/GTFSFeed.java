@@ -452,7 +452,10 @@ GTFSFeed implements Cloneable, Closeable {
                 .transactionDisable()
                 .mmapFileEnable()
                 .asyncWriteEnable()
-                .compressionEnable();
+                .compressionEnable()
+                // MapDB keeps this many deserialized B-tree nodes on the heap (default 32768, ~150 MB of stop times
+                // for a big feed while the graph is built); a small cache keeps the import heap small
+                .cacheSize(Integer.getInteger("gtfs.mapdb_cache_size", 32768));
         if (file.exists()) {
             dbMaker.readOnly();
         }

@@ -44,7 +44,9 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -209,6 +211,32 @@ class TripFromLabel {
         return partitions;
     }
 
+    /**
+     * A trip merged with identical trips of other services is reported as the copy that runs on the service day of the
+     * boarding, so the answer names the same trip as without merging.
+     */
+    private String tripIdOnServiceDay(String feedId, String tripId, int boardStopSequence, long boardTime) {
+        String[] copies = gtfsStorage.getTripCopies().get(feedId + ":" + tripId);
+        if (copies == null) {
+            return tripId;
+        }
+        GTFSFeed feed = gtfsStorage.getGtfsFeeds().get(feedId);
+        StopTime boardStopTime = feed.stop_times.get(new org.mapdb.Fun.Tuple2<>(tripId, boardStopSequence));
+        com.conveyal.gtfs.model.Trip trip = feed.trips.get(tripId);
+        if (boardStopTime == null || trip == null) {
+            return tripId;
+        }
+        ZoneId zoneId = ZoneId.of(feed.agency.get(feed.routes.get(trip.route_id).agency_id).agency_timezone);
+        LocalDate serviceDay = Instant.ofEpochMilli(boardTime).minusSeconds(boardStopTime.departure_time).atZone(zoneId).toLocalDate();
+        for (String copy : copies) {
+            com.conveyal.gtfs.model.Trip copyTrip = feed.trips.get(copy);
+            if (copyTrip != null && feed.services.get(copyTrip.service_id).activeOn(serviceDay)) {
+                return copy;
+            }
+        }
+        return tripId;
+    }
+
     private class StopsFromBoardHopDwellEdges {
 
         private final GtfsRealtime.TripDescriptor tripDescriptor;
@@ -365,7 +393,7 @@ class TripFromLabel {
 
                     result.add(new Trip.PtLeg(
                             feedId, partition.get(0).edge.getTransfers() == 0,
-                            tripDescriptor.getTripId(),
+                            tripIdOnServiceDay(feedId, tripDescriptor.getTripId(), partition.get(0).edge.getStopSequence(), boardTime),
                             tripDescriptor.getRouteId(),
                             Optional.ofNullable(gtfsStorage.getGtfsFeeds().get(feedId).trips.get(tripDescriptor.getTripId())).map(t -> t.trip_headsign).orElse("extra"),
                             stops,

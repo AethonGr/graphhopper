@@ -115,6 +115,8 @@ public class GraphHopperGtfs extends GraphHopper {
                     Transfers transfers = new Transfers(gtfsFeed);
                     allTransfers.put(id, transfers);
                     GtfsReader gtfsReader = new GtfsReader(id, ptGraph, ptGraph, getGtfsStorage(), getLocationIndex(), transfers, indexBuilder);
+                    gtfsReader.setMergeIdenticalTrips(ghConfig.getBool("gtfs.merge_identical_trips", false));
+                    gtfsReader.setServiceWindowDays(ghConfig.getInt("gtfs.service_window_days", 0));
                     // Stops must be connected to the networks of all the modes
                     List<DefaultSnapFilter> snapFilters = getProfiles().stream().map(p ->
                             new DefaultSnapFilter(createWeighting(p, new PMap()), getEncodingManager().getBooleanEncodedValue(Subnetwork.key(p.getName())))).collect(Collectors.toList());

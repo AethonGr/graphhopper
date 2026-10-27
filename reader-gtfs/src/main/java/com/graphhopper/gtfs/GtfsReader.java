@@ -20,6 +20,9 @@ package com.graphhopper.gtfs;
 
 import com.conveyal.gtfs.model.*;
 import com.google.common.collect.HashMultimap;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import com.google.transit.realtime.GtfsRealtime;
 import com.graphhopper.routing.util.EdgeFilter;
 import com.graphhopper.storage.index.InMemConstructionIndex;
@@ -44,6 +47,8 @@ class GtfsReader {
     private final InMemConstructionIndex indexBuilder;
     private LocalDate startDate;
     private LocalDate endDate;
+    private boolean mergeIdenticalTrips = false;
+    private int serviceWindowDays = 0;
 
     interface PtGraphOut {
 
@@ -120,9 +125,107 @@ class GtfsReader {
         insertGtfsTransfers();
     }
 
+    /**
+     * Many feeds repeat every trip once per service, e.g. one service per weekday. With this on, trips with the same
+     * route, shape, headsign and stop times become one trip that runs on the union of their days: the same journeys
+     * from a fraction of the transit graph. The graph keeps the smallest trip_id of the copies; answers name the copy
+     * that runs on the travel date (GtfsStorage.getTripCopies). Trips in blocks or with frequencies are left alone.
+     */
+    void setMergeIdenticalTrips(boolean mergeIdenticalTrips) {
+        this.mergeIdenticalTrips = mergeIdenticalTrips;
+    }
+
+    /**
+     * With a positive value, only trips that run between yesterday and this many days from today become part of the
+     * transit graph (the graph is rebuilt every night anyway). 0 keeps the whole calendar.
+     */
+    void setServiceWindowDays(int serviceWindowDays) {
+        this.serviceWindowDays = serviceWindowDays;
+    }
+
+    private BitSet validOnDay(Trip trip) {
+        Service service = feed.services.get(trip.service_id);
+        BitSet validOnDay = new BitSet((int) DAYS.between(startDate, endDate));
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            if (service.activeOn(date)) {
+                validOnDay.set((int) DAYS.between(startDate, date));
+            }
+        }
+        return validOnDay;
+    }
+
+    private boolean runsInServiceWindow(BitSet validOnDay) {
+        if (serviceWindowDays <= 0) {
+            return true;
+        }
+        LocalDate today = LocalDate.now();
+        int from = (int) Math.max(0, DAYS.between(startDate, today.minusDays(1)));
+        int to = (int) DAYS.between(startDate, today.plusDays(serviceWindowDays));
+        if (to < 0) {
+            return false;
+        }
+        int next = validOnDay.nextSetBit(from);
+        return next >= 0 && next <= to;
+    }
+
+    private boolean isMergeable(Trip trip) {
+        return trip.block_id == null && feed.getFrequencies(trip.trip_id).isEmpty();
+    }
+
+    private HashCode timetableSignature(Trip trip) {
+        Hasher hasher = Hashing.murmur3_128().newHasher();
+        for (String field : new String[]{trip.route_id, trip.shape_id, trip.trip_headsign, trip.trip_short_name}) {
+            hasher.putUnencodedChars(String.valueOf(field)).putChar('\u0000');
+        }
+        hasher.putInt(trip.direction_id).putInt(trip.wheelchair_accessible).putInt(trip.bikes_allowed);
+        for (StopTime st : feed.getOrderedStopTimesForTrip(trip.trip_id)) {
+            hasher.putUnencodedChars(st.stop_id).putChar('\u0000').putUnencodedChars(String.valueOf(st.stop_headsign)).putChar('\u0000')
+                    .putInt(st.stop_sequence).putInt(st.arrival_time).putInt(st.departure_time)
+                    .putInt(st.pickup_type).putInt(st.drop_off_type);
+        }
+        return hasher.hash();
+    }
+
+    /**
+     * The days of every trip that goes into the graph: with merging, one entry per set of identical trips (under the
+     * smallest trip_id, with the union of their days) and none for the other copies.
+     */
+    private Map<String, BitSet> tripValidities() {
+        Map<String, BitSet> validities = new HashMap<>();
+        Map<HashCode, String> representatives = new HashMap<>();
+        Map<String, List<String>> copies = new HashMap<>();
+        int trips = 0, merged = 0;
+        for (Trip trip : feed.trips.values()) {
+            trips++;
+            BitSet validOnDay = validOnDay(trip);
+            if (mergeIdenticalTrips && isMergeable(trip)) {
+                String representative = representatives.putIfAbsent(timetableSignature(trip), trip.trip_id);
+                if (representative != null) {
+                    validities.get(representative).or(validOnDay);
+                    copies.computeIfAbsent(representative, t -> new ArrayList<>(List.of(t))).add(trip.trip_id);
+                    merged++;
+                    continue;
+                }
+            }
+            validities.put(trip.trip_id, validOnDay);
+        }
+        validities.values().removeIf(validOnDay -> !runsInServiceWindow(validOnDay));
+        copies.forEach((representative, tripIds) -> {
+            if (validities.containsKey(representative)) {
+                gtfsStorage.getTripCopies().put(id + ":" + representative, tripIds.toArray(new String[0]));
+            }
+        });
+        LOGGER.info("Feed {}: {} trips, {} merged into identical trips, {} go into the transit graph", id, trips, merged, validities.size());
+        return validities;
+    }
+
     private void createTrips() {
+        Map<String, BitSet> validities = tripValidities();
         HashMultimap<String, Trip> blockTrips = HashMultimap.create();
         for (Trip trip : feed.trips.values()) {
+            if (!validities.containsKey(trip.trip_id)) {
+                continue;
+            }
             if (trip.block_id != null) {
                 blockTrips.put(trip.block_id, trip);
             } else {
@@ -132,13 +235,7 @@ class GtfsReader {
         blockTrips.asMap().values().forEach(unsortedTrips -> {
             List<TripWithStopTimes> trips = unsortedTrips.stream()
                     .map(trip -> {
-                        Service service = feed.services.get(trip.service_id);
-                        BitSet validOnDay = new BitSet((int) DAYS.between(startDate, endDate));
-                        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
-                            if (service.activeOn(date)) {
-                                validOnDay.set((int) DAYS.between(startDate, date));
-                            }
-                        }
+                        BitSet validOnDay = validities.get(trip.trip_id);
                         ArrayList<StopTime> stopTimes = new ArrayList<>();
                         feed.getInterpolatedStopTimesForTrip(trip.trip_id).forEach(stopTimes::add);
                         return new TripWithStopTimes(trip, stopTimes, validOnDay, Collections.emptySet(), Collections.emptySet());
