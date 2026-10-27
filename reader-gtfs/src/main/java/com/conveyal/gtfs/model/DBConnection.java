@@ -12,11 +12,16 @@ public class DBConnection {
     private Connection conn;
     private static final Logger LOG = LoggerFactory.getLogger(GTFSFeed.class);
 
-    public DBConnection(String db) throws  SQLException {
+    /**
+     * Connects to the PostgreSQL database DATABASE_NAME (default "transitool"); {@code schema} is the schema that
+     * unqualified table names resolve to (the old MySQL database: "operational_data", "user_data", ...).
+     */
+    public DBConnection(String schema) throws  SQLException {
         String host = null;
         String user = null;
         String password = null;
-        String port = "3306"; // Default MySQL port
+        String port = "5432"; // Default PostgreSQL port
+        String database = "transitool";
 
         if (System.getenv("DATABASE_HOST") != null && System.getenv("DATABASE_USER") != null && System.getenv("DATABASE_PASSWORD") != null) {
             host = System.getenv("DATABASE_HOST");
@@ -24,6 +29,9 @@ public class DBConnection {
             password = System.getenv("DATABASE_PASSWORD");
             if (System.getenv("DATABASE_PORT") != null) {
                 port = System.getenv("DATABASE_PORT");
+            }
+            if (System.getenv("DATABASE_NAME") != null) {
+                database = System.getenv("DATABASE_NAME");
             }
             LOG.info("Using database credentials from environment variables");
         } else {
@@ -33,73 +41,39 @@ public class DBConnection {
             LOG.warn("Database environment variables not set. Using default credentials (host: {}, user: {})", host, user);
         }
 
-        // Determine if this is a managed database that requires SSL
-        boolean isManagedDatabase = host != null && (
-            host.contains("digitalocean.com") || 
-            host.contains("amazonaws.com") || 
-            host.contains("rds.")
-        );
-
-        // Build connection URL with appropriate SSL settings
-        StringBuilder connection_url_builder = new StringBuilder("jdbc:mysql://");
-        connection_url_builder.append(host).append(":").append(port).append("/").append(db);
-        connection_url_builder.append("?connectTimeout=120000");        // 120 second connection timeout
-        connection_url_builder.append("&socketTimeout=120000");         // 120 second socket timeout
-        connection_url_builder.append("&autoReconnect=true");           // Auto reconnect on connection loss
-        
-        if (isManagedDatabase) {
-            // For managed databases (DigitalOcean, AWS RDS, etc.), SSL is REQUIRED
-            // but we don't verify certificates as the connection is already secured through infrastructure
-            connection_url_builder.append("&useSSL=true");
-            connection_url_builder.append("&requireSSL=true");
-            connection_url_builder.append("&verifyServerCertificate=false");
-            connection_url_builder.append("&allowPublicKeyRetrieval=true");
-            LOG.info("Detected managed database. SSL enabled with certificate verification disabled.");
-        } else {
-            // For local/development databases, SSL may not be configured
-            connection_url_builder.append("&useSSL=false");
-            connection_url_builder.append("&allowPublicKeyRetrieval=true");
-            LOG.info("Local database detected. SSL disabled.");
-        }
+        // Build connection URL: the database is always the local compose service, no SSL
+        StringBuilder connection_url_builder = new StringBuilder("jdbc:postgresql://");
+        connection_url_builder.append(host).append(":").append(port).append("/").append(database);
+        connection_url_builder.append("?currentSchema=").append(schema);
+        connection_url_builder.append("&connectTimeout=120");           // 120 second connection timeout
+        connection_url_builder.append("&socketTimeout=120");            // 120 second socket timeout
+        connection_url_builder.append("&ApplicationName=graphhopper");
 
         String connection_url = connection_url_builder.toString();
 
-        LOG.info("Attempting database connection to: {}:{}/{}", host, port, db);
-        LOG.info("Environment check - DATABASE_HOST: {}, DATABASE_USER: {}, DATABASE_PASSWORD: {}, DATABASE_PORT: {}",
+        LOG.info("Attempting database connection to: {}:{}/{} (schema {})", host, port, database, schema);
+        LOG.info("Environment check - DATABASE_HOST: {}, DATABASE_USER: {}, DATABASE_PASSWORD: {}, DATABASE_PORT: {}, DATABASE_NAME: {}",
                 System.getenv("DATABASE_HOST") != null ? "SET" : "NOT SET",
                 System.getenv("DATABASE_USER") != null ? "SET" : "NOT SET",
                 System.getenv("DATABASE_PASSWORD") != null ? "SET" : "NOT SET",
-                System.getenv("DATABASE_PORT") != null ? "SET ("+System.getenv("DATABASE_PORT")+")" : "NOT SET (using default 3306)");
+                System.getenv("DATABASE_PORT") != null ? "SET ("+System.getenv("DATABASE_PORT")+")" : "NOT SET (using default 5432)",
+                System.getenv("DATABASE_NAME") != null ? "SET ("+System.getenv("DATABASE_NAME")+")" : "NOT SET (using default transitool)");
 
         try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            Class.forName("org.postgresql.Driver");
             this.conn = DriverManager.getConnection(connection_url, user, password);
             LOG.info("Successfully connected to database!");
 
         } catch (ClassNotFoundException e){
-            LOG.error("MySQL JDBC Driver not found! Exception: " + e);
-            throw new SQLException("MySQL JDBC Driver not found", e);
+            LOG.error("PostgreSQL JDBC Driver not found! Exception: " + e);
+            throw new SQLException("PostgreSQL JDBC Driver not found", e);
         } catch (SQLException e){
-            LOG.error("Failed to connect to database! Host: {}, Port: {}, Database: {}, User: {}", 
-                     host, port, db, user);
+            LOG.error("Failed to connect to database! Host: {}, Port: {}, Database: {}, Schema: {}, User: {}",
+                     host, port, database, schema, user);
             LOG.error("SQLException details - SQLState: {}, ErrorCode: {}, Message: {}", 
                      e.getSQLState(), e.getErrorCode(), e.getMessage());
             throw e;
         }
-
-    }
-
-    // Helper method to retrieve a single page of data
-    public ResultSet getPaginatedData(int page, int pageSize, String query) throws SQLException {
-
-        Connection connection = this.getConn();
-        PreparedStatement preparedStatement = connection.prepareStatement(query);
-
-        int offset = (page - 1) * pageSize;
-        preparedStatement.setInt(1, pageSize);
-        preparedStatement.setInt(2, offset);
-
-        return preparedStatement.executeQuery();
 
     }
 

@@ -148,15 +148,15 @@ public class GraphHopperGtfs extends GraphHopper {
                 "FROM working_data.info AS info " +
                 "JOIN user_data.api_tokens AS t ON info.company_id = t.company_id " +
                 "WHERE t.api_name = 'get_directions' " +
-                "AND t.revoked = 0 " +
-                "AND t.published = 1 " +
-                "AND info.share_gtfs = 1 " +
-                "AND info.validated = 1 " +
-                "AND info.published = 1 " +
+                "AND NOT t.revoked " +
+                "AND t.published " +
+                "AND info.share_gtfs " +
+                "AND info.validated " +
+                "AND info.published " +
                 "AND NOT EXISTS (" +
                 "    SELECT 1 " +
                 "    FROM working_data.routes r " +
-                "    WHERE r.company_id = info.company_id AND r.route_type = 1100" +
+                "    WHERE r.company_id = info.company_id AND r.route_type = '1100'" +
                 ")";
         ResultSet rs = db.ExecuteQuery(sql);
         List<String> candidate_ids = new ArrayList<>();
@@ -230,13 +230,13 @@ public class GraphHopperGtfs extends GraphHopper {
                 "  (SELECT COUNT(*)        FROM operational_data.calendar       WHERE company_id = " + cid + ") AS n_cal, " +
                 "  (SELECT MIN(start_date) FROM operational_data.calendar       WHERE company_id = " + cid + ") AS min_start, " +
                 "  (SELECT MAX(end_date)   FROM operational_data.calendar       WHERE company_id = " + cid + ") AS max_end, " +
-                "  (SELECT COUNT(*)        FROM operational_data.calendar       WHERE company_id = " + cid + " AND end_date >= CURDATE()) AS n_cal_current, " +
-                "  (SELECT COUNT(*)        FROM operational_data.calendar_dates WHERE company_id = " + cid + " AND exception_type = '1' AND date >= CURDATE()) AS n_cd_future, " +
+                "  (SELECT COUNT(*)        FROM operational_data.calendar       WHERE company_id = " + cid + " AND end_date >= CURRENT_DATE) AS n_cal_current, " +
+                "  (SELECT COUNT(*)        FROM operational_data.calendar_dates WHERE company_id = " + cid + " AND exception_type = '1' AND date >= CURRENT_DATE) AS n_cd_future, " +
                 "  (SELECT COUNT(*)        FROM operational_data.calendar       WHERE company_id = " + cid +
-                "        AND start_date <= CURDATE() AND end_date >= CURDATE() " +
-                "        AND CASE DAYOFWEEK(CURDATE()) " +
-                "              WHEN 1 THEN sunday WHEN 2 THEN monday WHEN 3 THEN tuesday WHEN 4 THEN wednesday " +
-                "              WHEN 5 THEN thursday WHEN 6 THEN friday WHEN 7 THEN saturday END = '1') AS n_active_today";
+                "        AND start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE " +
+                "        AND CASE EXTRACT(DOW FROM CURRENT_DATE) " +
+                "              WHEN 0 THEN sunday WHEN 1 THEN monday WHEN 2 THEN tuesday WHEN 3 THEN wednesday " +
+                "              WHEN 4 THEN thursday WHEN 5 THEN friday WHEN 6 THEN saturday END = '1') AS n_active_today";
 
         ResultSet rs = db.ExecuteQuery(probe);
         boolean current = false;

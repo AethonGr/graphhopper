@@ -328,47 +328,42 @@ public abstract class Entity implements Serializable, Cloneable {
         public void loadTable(String company_id) {
             LOG.info("Loading GTFS table {} from database", tableName);
             try {
-                String S_company_id = String.valueOf(company_id);
-                DBConnection column_conn = new DBConnection("operational_data");
-                ResultSet column_rs = column_conn.ExecuteQuery("SELECT * FROM " + tableName + " LIMIT 1");
+                long cid = Long.parseLong(company_id.trim());
+                DBConnection conn = new DBConnection("operational_data");
+                ResultSet column_rs = conn.ExecuteQuery("SELECT * FROM " + tableName + " LIMIT 0");
                 ResultSetMetaData rsmd = column_rs.getMetaData();
                 int columnCount = rsmd.getColumnCount();
 
+                // Every column but the last one (company_id). GTFS times are intervals in PostgreSQL: select them
+                // as HH:MM:SS text, hours past 24 included, which is what getTimeField parses
                 String columns = "";
                 for (int i = 1; i <= columnCount - 1; i++) {
-                    columns = columns.concat(rsmd.getColumnName(i));
+                    String column = rsmd.getColumnName(i);
+                    if ("interval".equals(rsmd.getColumnTypeName(i))) {
+                        columns = columns.concat("to_char(make_interval(secs => extract(epoch from " + column + ")), 'HH24:MI:SS') AS " + column);
+                    } else {
+                        columns = columns.concat(column);
+                    }
                     if (i != columnCount - 1) {
                         columns = columns.concat(",");
                     }
                 }
+                column_rs.close();
 
-                String query;
-
-                int page = 1;
-                boolean hasMoreData = true;
-
-                while (hasMoreData) {
-
-                    DBConnection conn = new DBConnection("operational_data");
-
-                    hasMoreData = false;
-                    query = "SELECT " + columns + " AS " + columns + " FROM " + tableName + "  WHERE company_id = " + S_company_id + " LIMIT ? OFFSET ?;";
-
-                    this.resultSet = conn.getPaginatedData(page,500000, query);
-
-                    while (resultSet.next()) {
-                        if (++row % 500000 == 0) {
-                            LOG.info("Record number {}", human(row));
-                        }
-                        hasMoreData = true;
-                        loadOneRow(); // Call subclass method to produce an entity from the current row.
+                // One query, streamed through a cursor (PostgreSQL only fetches in batches inside a transaction)
+                conn.getConn().setAutoCommit(false);
+                PreparedStatement statement = conn.getConn().prepareStatement("SELECT " + columns + " FROM " + tableName + " WHERE company_id = ?");
+                statement.setFetchSize(50000);
+                statement.setLong(1, cid);
+                this.resultSet = statement.executeQuery();
+                while (resultSet.next()) {
+                    if (++row % 500000 == 0) {
+                        LOG.info("Record number {}", human(row));
                     }
-                    page++;
-                    conn.getConn().commit();
-                    conn.getConn().close();
-
-
+                    loadOneRow(); // Call subclass method to produce an entity from the current row.
                 }
+                conn.getConn().commit();
+                conn.getConn().close();
 
             } catch (SQLException ex) {
                 // handle any errors
